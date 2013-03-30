@@ -1,0 +1,11 @@
+name = User restrictions
+description = Specifies rules for restricting the data users can set for their accounts.
+core = 7.x
+files[] = user_restrictions.classes.inc
+
+; Information added by drupal.org packaging script on 2012-10-22
+version = "7.x-1.0-beta9"
+core = "7.x"
+project = "user_restrictions"
+datestamp = "1350921728"
+
