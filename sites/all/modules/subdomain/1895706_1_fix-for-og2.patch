@@ -1,0 +1,29 @@
+diff --git a/includes/subdomain_mode_group.inc b/includes/subdomain_mode_group.inc
+index 48b71b9..5a92f8c 100644
+--- a/includes/subdomain_mode_group.inc
++++ b/includes/subdomain_mode_group.inc
+@@ -31,15 +31,8 @@ class subdomain_mode_group extends subdomain_engine {
+   function get_content_subdomain($nid) {
+     static $subdomains;
+     if (!isset($subdomains[$nid])) {
+-      $sid = db_query("
+-        SELECT og.etid as nid
+-        FROM {field_data_group_audience} a
+-          INNER JOIN {field_config_entity_type} e ON a.etid = e.etid
+-          INNER JOIN {node} n ON a.entity_id = n.nid
+-          INNER JOIN {og} og on a.group_audience_gid = og.gid
+-        WHERE e.type = 'node' AND n.nid = :nid AND n.type NOT IN (:types)",
+-        array(':nid' => $nid, ':types' => _subdomain_filtered_content_types()))
+-      ->fetchField();
++      $sid = db_query("SELECT gid from og_membership where field_name = 'og_group_ref' AND etid = :nid LIMIT 1",
++        array(':nid' => $nid))->fetchField();
+       $subdomains[$nid] = subdomain_get_subdomain($sid);
+     }
+     return $subdomains[$nid];
+@@ -118,4 +111,4 @@ class subdomain_mode_group extends subdomain_engine {
+     }
+     drupal_set_message(format_plural($count, '1 new subdomain created.', '@count new subdomains created.'));
+   }
+-}
+\ No newline at end of file
++}
