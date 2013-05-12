@@ -1,0 +1,14 @@
+#subdomain-check {
+  margin-left: 1em;
+  color: green;
+  font-weight:bold;
+}
+
+#subdomain-check.malformed,
+#subdomain-check.duplicate {
+  color: red;
+}
+
+#subdomain-check.checking {
+  color: gray;
+}

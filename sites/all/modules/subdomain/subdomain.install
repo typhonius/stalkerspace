@@ -1,0 +1,182 @@
+<?php
+
+/**
+ * @file
+ * Subdomain module install file
+ */
+
+function subdomain_install() {
+  // do nothing
+}
+
+function subdomain_uninstall() {
+  $vars = array(
+      'filter_contenttypes',
+      'home',
+      'mode',
+      'prepend_www',
+      'reserved',
+      'source',
+      'view',
+      'vocab'
+  );
+  foreach ($vars as $var) {
+    variable_del("subdomain_$var");
+  }
+}
+
+function subdomain_schema() {
+  $schema['subdomain'] = array(
+    'description' => t('Subdomains'),
+    'fields' => array(
+      'sid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE),
+      'subdomain' => array('type' => 'varchar', 'length' => '255', 'not null' => TRUE, 'default' => ''),
+    ),
+    'primary key' => array('sid'),
+    'indexes' => array(
+      'subdomain' => array('subdomain')),
+  );
+  return $schema;
+}
+
+function subdomain_update_6200() {
+  $ret = array();
+
+  // Setup subdomain table
+  // TODO: Test this. Don't think we need to explicitly install subdomain schema
+  //  drupal_install_schema('subdomain');
+
+  // Update variables
+  switch (variable_get('subdomain_type', 2)) {
+    case 1:
+      variable_set('subdomain_mode', 'group');
+      break;
+
+    case 3:
+      variable_set('subdomain_mode', 'term');
+      break;
+
+    case 4:
+      variable_set('subdomain_mode', 'contenttype');
+      break;
+
+    default:
+      variable_set('subdomain_mode', 'user');
+      break;
+  }
+
+  $vars = array(
+    'type',
+    'style',
+    'custom',
+    'allow_onlyalpha',
+    'ajax_paths',
+    'base_domain',
+    'allowchange',
+  );
+  foreach ($vars as $var) {
+    variable_del("subdomain_$var");
+  }
+
+  switch (variable_get('subdomain_mode', 'user')) {
+    case 'user':
+      $pattern = 'user/%';
+      $table = 'users';
+      $field = 'uid';
+      break;
+
+    case 'group':
+      $pattern = 'node/%';
+      $table = 'og';
+      $field = 'nid';
+      break;
+
+    case 'term':
+      $pattern = 'taxonomy/term/%';
+      $table = 'term_data';
+      $field = 'tid';
+      break;
+  }
+
+  $rows = _subdomain_fetch_rows(db_query("SELECT pid, src, dst FROM {url_alias} WHERE src LIKE '%s' AND dst LIKE '~%'", $pattern), strlen($pattern) - 1);
+
+  $migrated = array();
+  foreach ($rows as $row) {
+    if (is_numeric($row->src) && !isset($migrated[$row->src]) && _subdomain_row_exists($table, $field, $row->src)) {
+      // Can't use subdomain()->save_record b/c new schema not available in hook_update/hook_install
+      db_query("INSERT INTO {subdomain} (sid, subdomain) VALUES (%d, '%s')", $row->src, subdomain()->clean($row->dst));
+      $migrated[$row->src] = TRUE;
+    }
+  }
+
+  drupal_set_message(format_plural(count($migrated), "Subdomain: 1 subdomain updated.", "Subdomain: @count subdomains updated."));
+
+  // Delete subdomainified URL aliases
+  db_query("DELETE FROM {url_alias} WHERE dst LIKE '~%' AND (src LIKE 'user/%' OR src LIKE 'node/%' OR src LIKE 'taxonomy/term/%')");
+
+  $deleted = db_affected_rows();
+  drupal_set_message(format_plural(count($deleted), "Subdomain: 1 old subdomain url alias deleted.", "Subdomain: @count old subdomain aliases deleted."));
+
+  // Remove [subdomain] token from pathauto settings
+  $result = db_query("SELECT name FROM {variable} WHERE name LIKE 'pathauto_%_pattern' AND value LIKE '%[subdomain]%'");
+  $names = array();
+  while ($name = $result->fetchField()) {
+    $val = variable_get($name, '');
+    $val = str_replace('[subdomain]/', '', $val);
+    $val = str_replace('[subdomain]', '', $val);
+    variable_set($name, $val);
+
+    $names[] = substr($name, 9, -8);
+  }
+
+  if (count($names)) {
+    drupal_set_message(t('Subdomain: [subdomain] token removed from these pathauto paths:<br />&nbsp;- ' . implode("<br />&nbsp;- ", $names)));
+  }
+
+  drupal_set_message(t('IMPORTANT! Subdomain no longer requires or uses the path, token, or pathauto modules. Please review your pathauto settings and regenerate missing URL aliases if necessary'), 'warning');
+  return $ret;
+}
+
+function _subdomain_row_exists($table, $field, $value) {
+  return db_query("SELECT 1 FROM {%s} WHERE %s = %d", $table, $field, $value)->fetchField();
+}
+
+function _subdomain_fetch_rows($result, $offset = 0) {
+  foreach ($result as $row) {
+    $row->src = substr($row->src, $offset);
+    if ($pos = strpos($row->dst, '/')) {
+      $row->dst = substr($row->dst, 1, strpos($row->dst, '/') - 1);
+    }
+    else {
+      $row->dst = substr($row->dst, 1);
+    }
+    if ($key) {
+      $rows[$row->$key] = $row;
+    }
+    else {
+      $rows[] = $row;
+    }
+  }
+  return $rows;
+}
+
+/**
+ * Mark schema as 7.x-2.x branch.
+ */
+function subdomain_update_7200(&$sandbox) {
+}
+
+/**
+ * Update subdomain configuration variables.
+ */
+function subdomain_update_7201(&$sandbox) {
+  // Update variable that holds wether we will use default homepage.
+  $home = variable_get('subdomain_home', 'default');
+  variable_set('subdomain_home_default', $home == 'default' ? 1 : 0);
+  variable_del('subdomain_home');
+  
+  // Update variable that holds which view to use for the homepage.
+  $view = variable_get('subdomain_view', '');
+  variable_set('subdomain_home_view', $view);
+  variable_del('subdomain_view');
+}

@@ -1,0 +1,19 @@
+
+name = Subdomain
+core = 7.x
+php = 5.2
+description = automatically create subdomains and assign nodes to those subdomains
+package = Other
+
+files[] = includes/subdomain.inc
+files[] = includes/subdomain_mode_user.inc
+files[] = includes/subdomain_mode_term.inc
+files[] = includes/subdomain_mode_group.inc
+files[] = includes/subdomain_mode_contenttype.inc
+configure = admin/config/system/subdomain
+; Information added by drupal.org packaging script on 2011-10-06
+version = "7.x-2.0-beta2"
+core = "7.x"
+project = "subdomain"
+datestamp = "1317877308"
+
