@@ -1,0 +1,5 @@
+name = Stalkerspace Theme
+description = A theme to be used on the Stalkerspace website
+package = Stalkerspace
+core = 7.x
+
