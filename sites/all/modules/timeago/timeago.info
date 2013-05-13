@@ -1,0 +1,14 @@
+name = Timeago
+description = "Converts dynamic timetamps to a 'time ago' format using jQuery with graceful degredation."
+core = 7.x
+configure = admin/config/user-interface/timeago
+
+files[] = timeago.install
+files[] = timeago.module
+
+; Information added by drupal.org packaging script on 2012-09-29
+version = "7.x-2.1"
+core = "7.x"
+project = "timeago"
+datestamp = "1348962069"
+
