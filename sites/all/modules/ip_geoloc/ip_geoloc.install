@@ -1,0 +1,187 @@
+<?php
+
+/**
+ * @file
+ * Install and uninstall hooks for IP Geolocation.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function ip_geoloc_requirements($phase) {
+  $t = get_t();
+  $requirements = array('ip_geoloc' => array());
+
+  $geolocation_methods = array();
+  if (variable_get('ip_geoloc_google_to_reverse_geocode', TRUE)) {
+    $geolocation_methods[] = $t('Google Maps reverse-geocode');
+  }
+  if (variable_get('ip_geoloc_smart_ip_as_backup', TRUE)) {
+    if (module_exists('smart_ip')) {
+      $geolocation_methods[] = 'Smart IP';
+    }
+    else {
+      $requirements['ip_geoloc']['severity'] = REQUIREMENT_WARNING;
+      $requirements['ip_geoloc']['description'] = $t('Smart IP is configured as a backup in case the Google Maps reverse-geocode fails. However the Smart IP module is not enabled.');
+    }
+  }
+  elseif (module_exists('geoip')) {
+    $geolocation_methods[] = 'GeoIP API';
+  }
+  $geolocation_methods = array_merge($geolocation_methods, module_implements('get_ip_geolocation_alter'));
+
+  $requirements['ip_geoloc']['title'] = $t('IP Geolocation data collection methods employed');
+  $requirements['ip_geoloc']['value'] = implode(', ', $geolocation_methods);
+  if (empty($geolocation_methods)) {
+    $warning = $t('You currently have no data collection methods enabled. Therefore no new address information can be added to the IP Geolocation database.');
+    if (empty($requirements['ip_geoloc']['description'])) {
+      $requirements['ip_geoloc']['severity'] = REQUIREMENT_WARNING;
+      $requirements['ip_geoloc']['description'] = $warning;
+    }
+    else {
+      $requirements['ip_geoloc']['description'] .= ' ' . $warning;
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ */
+function ip_geoloc_install() {
+  // Set high weight so our implementation of hook init comes last.
+  db_update('system')
+    ->fields(array('weight' => 10))
+    ->condition('name', 'ip_geoloc')
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function ip_geoloc_uninstall() {
+  // Delete all ip_geoloc_* variables at once
+  db_query("DELETE FROM {variable} WHERE name LIKE 'ip_geoloc_%%'");
+}
+
+/**
+ * Implements hook_schema().
+ *
+ * Smart IP module provides:
+ *  IP address
+ *  Latitude/Longitude
+ *  Country
+ *  Country Code
+ *  Region
+ *  Region Code (usually empty for Australia)
+ *  City
+ *  ZIP (which we store under Postal Code)
+ *
+ * GeoIP City provides:
+ *  TBA
+ *
+ * Goolge provides:
+ *  TBA
+ */
+function ip_geoloc_schema() {
+  $schema['ip_geoloc'] = array(
+    'description' => 'Store visitor IP addresses and geolocation information',
+      'fields' => array(
+        'id'          => array(
+        'description' => 'Unique id',
+        'type'        => 'serial',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'ip_address' => array(
+        'description' => 'IP address',
+        'type'        => 'varchar',
+        'length'      => '32',
+        'not null'    => TRUE,
+      ),
+      'latitude' => array(
+        'description' => 'Latitude',
+        'type'        => 'float',
+        'size'        => 'big',
+        'not null'    => FALSE,
+      ),
+      'longitude' => array(
+        'description' => 'Longitude',
+        'type'        => 'float',
+        'size'        => 'big',
+        'not null'    => FALSE,
+      ),
+      'country' => array(
+        'description' => 'Country',
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => FALSE,
+      ),
+      'country_code' => array(
+        'description' => 'ISO 3166 2-Character Country Code',
+        'type'        => 'varchar',
+        'length'      => 3,
+        'not null'    => FALSE,
+      ),
+      'region' => array(
+        'description' => 'Region',
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => FALSE,
+      ),
+      'region_code' => array(
+        'description' => '2-Character Region Code',
+        'type'        => 'varchar',
+        'length'      => 3,
+        'not null'    => FALSE,
+      ),
+      'city' => array(
+        'description' => 'City',
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => FALSE,
+      ),
+      'postal_code' => array(
+        'description' => 'Post code',
+        'type'        => 'varchar',
+        'length'      => 12,
+        'not null'    => FALSE,
+      ),
+      'locality' => array(
+        'description' => 'Suburb',
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => FALSE,
+      ),
+      'route' => array(
+        'description' => 'Street',
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => FALSE,
+      ),
+      'street_number' => array(
+        'description' => 'Street number',
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => FALSE,
+      ),
+      'administrative_area_level_1' => array(
+        'description' => 'State or province',
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => FALSE,
+      ),
+      'formatted_address' => array(
+        'description' => 'Address',
+        'type'        => 'varchar',
+        'length'      => 128,
+        'not null'    => FALSE,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'ip_address' => array('ip_address')
+    )
+  );
+  return $schema;
+}

@@ -1,0 +1,17 @@
+name = Geolocation Proximity Filter
+description = Views proximity filter for Geolocation Field.
+package = Geolocation
+core = 7.x
+
+dependencies[] = geolocation
+dependencies[] = views
+
+files[] = handlers/geolocation_proximity_views_handler_filter_distance.inc
+files[] = handlers/geolocation_proximity_views_handler_field_distance.inc
+
+; Information added by drupal.org packaging script on 2012-04-25
+version = "7.x-2.0-alpha3"
+core = "7.x"
+project = "geolocation_proximity"
+datestamp = "1335339678"
+
