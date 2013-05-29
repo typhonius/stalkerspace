@@ -279,18 +279,22 @@ function _ip_geoloc_key_map($db_field_name = NULL, $ip_geoloc_key = NULL) {
 }
 
 /**
- * Better Statistics field callback for IP Geoloc.
+ * Returns a value to be inserted into the accesslog based on a field name
+ * provided. This handles Drupal Core's values as well as our own.
  *
- * Return a value to be inserted into the accesslog based on a database
- * field name provided, for the currently stored location.
- *
- * @param $db_field_name
- *   The name of the database field for which to return data.
+ * @param $field
+ *   The name of the field for which to return data.
  *
  * @return
  *   The data to be inserted into the accesslog for the provided field.
  */
-function _ip_geoloc_get_field_value($db_field_name) {
+function _ip_geoloc_get_field_value($field) {
+
+  // Sanity check, is the required field mapped?
+  if (!$ip_geoloc_item = _ip_geoloc_key_map($field)) {
+    return NULL;
+  }
+  list($ip_geoloc_key, $type, $size) = $ip_geoloc_item;
 
   static $geoloc; // see [#1970180]
 
@@ -326,66 +330,26 @@ function _ip_geoloc_get_field_value($db_field_name) {
       }
     }
   }
-
-  // No geolocation data available, return NULL.
-  if (empty($geoloc)) {
+  // No gelocation data available, return NULL.
+  if (empty($geoloc) || !isset($geoloc[$ip_geoloc_key])) {
     return NULL;
-  }
-
-  return _ip_geoloc_get_location_field_value($db_field_name, $geoloc);
-}
-
-/**
- * Return the value of an ip_geoloc key, for the target database field name.
- *
- * @param string $db_field_name
- *   The name of the database field for which to return data.
- * @param array $location
- *   The location array.
- *
- * @return
- *   The value of the ip_geoloc key required.
- */
-function _ip_geoloc_get_location_field_value($db_field_name, $location) {
-
-  // Sanity check, is the required database field mapped to a ip_geoloc
-  // array key?
-  if (!$ip_geoloc_item = _ip_geoloc_key_map($db_field_name)) {
-    return NULL;
-  }
-  list($ip_geoloc_key, $type, $size) = $ip_geoloc_item;
-
-  // Is there data for this key. If not, check viable alternatives,
-  // or return NULL as last resort.
-  if (!isset($location[$ip_geoloc_key]) || empty($location[$ip_geoloc_key])) {
-    switch ($db_field_name) {
-      case 'geoloc_region':
-        return _ip_geoloc_get_location_field_value('geoloc_admin_area_level_1', $location);
-
-      case 'geoloc_city':
-        return _ip_geoloc_get_location_field_value('geoloc_locality', $location);
-
-      default:
-        return NULL;
-
-    }
   }
 
   // Return data, ensuring right type and size.
   switch ($type) {
     case 'string':
       if ($size) {
-        return drupal_substr($location[$ip_geoloc_key], 0, $size);
+        return drupal_substr($geoloc[$ip_geoloc_key], 0, $size);
       }
       else {
-        return (string) $location[$ip_geoloc_key];
+        return (string) $geoloc[$ip_geoloc_key];
       }
     case 'boolean':
-      return empty($location[$ip_geoloc_key]) ? 0 : 1;
+      return empty($geoloc[$ip_geoloc_key]) ? 0 : 1;
     case 'float':
     case 'int':
-      settype($location[$ip_geoloc_key], $type);
-      return $location[$ip_geoloc_key];
+      settype($geoloc[$ip_geoloc_key], $type);
+      return $geoloc[$ip_geoloc_key];
     default:
       return NULL;
   }
@@ -410,27 +374,32 @@ function _ip_geoloc_statistics_backfill($from_timestamp, $location) {
     return;
   }
 
-  // Fetch the database fields currently active for {accesslog}.
-  $accesslog_db_fields = variable_get('better_statistics_fields', better_statistics_get_default_fields());
+  // Fetch the fields defined in {accesslog}.
+  $accesslog_fields = variable_get('better_statistics_fields', better_statistics_get_default_fields());
 
-  // Fetch the database fields managed by ip_geoloc.
-  $ip_geoloc_db_fields = array_keys(_ip_geoloc_key_map());
-
-  // Builds the db fields and values required for the update. Only collects
-  // the values for fields currently active in {accesslog}.
-  $db_fields = array();
-  foreach ($ip_geoloc_db_fields as $i => $db_field_name) {
-    if (isset($accesslog_db_fields[$db_field_name])) {
-      $db_fields[$db_field_name] = _ip_geoloc_get_location_field_value($db_field_name, $location);
+  // Loops through location keys to check which ones need to be updated.
+  $fields = array();
+  foreach ($location as $key => $value) {
+    $field_name = _ip_geoloc_key_map(NULL, $key);
+    if ($field_name and isset($accesslog_fields[$field_name])) {
+      $fields[$field_name] = $value;
     }
   }
 
-  // Run update. Take one extra second to from_timestamp to ensure initial hit,
-  // requesting location services, is included.
-  if (!empty($db_fields)) {
+  // Loops through fields not in location to blank them.
+  $ip_geoloc_fields = array_keys(_ip_geoloc_key_map());
+  foreach ($ip_geoloc_fields as $i => $field_name) {
+    if (!isset($fields[$field_name]) and isset($accesslog_fields[$field_name])) {
+      $fields[$field_name] = NULL;
+    }
+  }
+
+  // Run update. Take one extra second to from_timestamp to ensure initial hit
+  // requesting location is included.
+  if (!empty($fields)) {
     try {
       $num_updated = db_update('accesslog')
-        ->fields($db_fields)
+        ->fields($fields)
         ->condition('timestamp', $from_timestamp - 1, '>=')
         ->condition('sid', session_id(), '=')
         ->execute();

@@ -33,7 +33,7 @@ class ip_geoloc_plugin_style_map extends views_plugin_style {
     );
     $options['map_options'] = array('default' => '');
     $options['map_div_style'] = array('default' => '');
-    $options['empty_map_center'] = array('default' => '');
+
     return $options;
   }
 
@@ -84,20 +84,13 @@ class ip_geoloc_plugin_style_map extends views_plugin_style {
   }
 
   /**
-   * Validate the options form.
-   */
-  function options_validate(&$form, &$form_state) {
-    ip_geoloc_plugin_style_bulk_of_form_validate($form, $form_state);
-  }
-
-  /**
    * Transform the View result in a list of marker locations and render these on
    * a map.
    */
   function render() {
 
     if (!empty($this->view->live_preview)) {
-      return t('The preview function is incompatible with Google Maps so cannot be used. Please visit the page path or block to view your map.');
+      return t('The preview function is incompatible with Google Maps so cannot be used. Please visit the page path or the block to view your map.');
     }
 
     ip_geoloc_plugin_style_render_fields($this);
@@ -117,6 +110,13 @@ class ip_geoloc_plugin_style_map extends views_plugin_style {
 
     $center_option = !isset($this->options['center_option']) ? IP_GEOLOC_MAP_CENTER_ON_FIRST_LOCATION : $this->options['center_option'];
     $center_latlng = FALSE;
+
+    if (($center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS || $center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS_WEIGHTED) && !empty($locations)) {
+      list($center_lat, $center_lng) = ip_geoloc_center_of_locations($locations, $center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS_WEIGHTED);
+      $map_options = drupal_substr($map_options, strpos($map_options, '{') + 1);
+      $map_options = '{ "centerLat":' . $center_lat . ', "centerLng":' . $center_lng . ', ' . $map_options;
+    }
+
     if ($visitor_marker || $center_option == IP_GEOLOC_MAP_CENTER_ON_VISITOR) {
       // Perform database IP lookup as backup/replacement for HTML5 location
       $resample = TRUE; // visitor may be moving so ignore existing lat/long
@@ -127,25 +127,6 @@ class ip_geoloc_plugin_style_map extends views_plugin_style {
         $center_latlng = array($visitor_location['latitude'], $visitor_location['longitude']);
       }
     }
-
-    if (empty($locations)) {
-      $ll = trim($this->options['empty_map_center']);
-      if (empty($ll)) {
-        return; // No map whatsoever
-      }
-      if ($ll != t('visitor')) {
-        // Empty map centered on coordinates provided
-        list($center_lat, $center_lng) = preg_split("/[\s,]+/", $ll);
-      }
-    }
-    elseif ($center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS || $center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS_WEIGHTED) {
-      list($center_lat, $center_lng) = ip_geoloc_center_of_locations($locations, $center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS_WEIGHTED);
-    }
-    if (isset($center_lat) && isset($center_lng)) {
-      $map_options = drupal_substr($map_options, 0, strrpos($map_options, '}'));
-      $map_options = $map_options . ', "centerLat":' . $center_lat . ', "centerLng":' . $center_lng . '}';
-    }
-
     global $user;
     $gps_roles = empty($this->options['gps_roles']) ? array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID) : $this->options['gps_roles'];
     $gps_roles_applicable = array_intersect($gps_roles, array_keys($user->roles));

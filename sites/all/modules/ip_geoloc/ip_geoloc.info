@@ -22,9 +22,9 @@ files[] = views/ip_geoloc_plugin_argument_default_ip_geoloc.inc
 ; Leaflet modules.
 version = "7.x-1.x-dev"
 
-; Information added by drupal.org packaging script on 2013-05-17
-version = "7.x-1.20+14-dev"
+; Information added by drupal.org packaging script on 2013-04-25
+version = "7.x-1.20"
 core = "7.x"
 project = "ip_geoloc"
-datestamp = "1368796474"
+datestamp = "1366877412"
 
