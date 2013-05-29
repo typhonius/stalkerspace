@@ -8,8 +8,6 @@
  */
 require_once 'ip_geoloc_plugin_style.inc';
 
-define('LEAFLET_MARKERCLUSTER_EXCLUDE_FROM_CLUSTER', 0x01);
-
 class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
 
   /**
@@ -28,7 +26,6 @@ class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
     ));
     $options['default_marker_color'] = array('default' => '');
     $options['center_option'] = array('default' => IP_GEOLOC_MAP_CENTER_ON_FIRST_LOCATION);
-    $options['empty_map_center'] = array('default' => '');
     $options['visitor_marker_color'] = array('default' => 'none');
     $options['map'] = array('default' => 'OSM Mapnik'); // leaflet.module default
     $options['map_height'] = array('default' => 300);
@@ -61,7 +58,6 @@ class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
     $visitor_marker_colors = array(
       'none' => '<' . t('none') . '>') +
       ip_geoloc_marker_colors();
-    unset($visitor_marker_colors['0']);
 
     $form['visitor_marker_color'] = array(
       '#title' => t('Visitor marker'),
@@ -190,7 +186,6 @@ class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
    * Validate the options form.
    */
   function options_validate(&$form, &$form_state) {
-    ip_geoloc_plugin_style_bulk_of_form_validate($form, $form_state);
     $map_height = $form_state['values']['style_options']['map_height'];
     if (!is_numeric($map_height) || $map_height <= 0) {
       form_error($form['map_height'], t('Map height cannot be blank and must be a positive number.'));
@@ -245,7 +240,11 @@ class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
     if (!empty($locations) &&
         ($center_option == IP_GEOLOC_MAP_CENTER_ON_FIRST_LOCATION ||
         ($visitor_marker_color == 'none' && count($locations) == 1))) {
-      $map['center'] = _ip_geoloc_get_center(reset($locations));
+      $first_location = reset($locations);
+      $map['center'] = array(
+        'lat' => $first_location->latitude,
+        'lon' => $first_location->longitude
+      );
     }
     elseif (($center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS || $center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS_WEIGHTED) && !empty($locations)) {
       list($center_lat, $center_lon) = ip_geoloc_center_of_locations($locations, $center_option == IP_GEOLOC_MAP_CENTER_OF_LOCATIONS_WEIGHTED);
@@ -264,36 +263,39 @@ class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
         'lon' => $visitor_location['longitude']
       );
     }
-    if (empty($locations)) {
-      $ll = trim($this->options['empty_map_center']);
-      if (empty($ll)) {
-        return; // No map whatsoever
-      }
-      if ($ll != t('visitor')) {
-        // Empty map centered on coordinates provided
-        list($map['center']['lat'], $map['center']['lon']) = preg_split("/[\s,]+/", $ll);
-      }
-    //else Empty map centered on visitor location, as set above
-    }
-
     $marker_dimensions = explode('x', variable_get('ip_geoloc_marker_dimensions', '21 x 34'));
     $marker_width  = (int)$marker_dimensions[0];
     $marker_height = (int)$marker_dimensions[1];
 
     $features = array();
-    foreach ($locations as $key => $location) {
-      if (empty($location->type) && isset($location->latitude)) {
-        $feature = array(
-          'type' => 'point',
-          'lat' => $location->latitude,
-          'lon' => $location->longitude,
+    if ($visitor_marker_color != 'none' && isset($visitor_location['latitude'])) {
+      // See leaflet/README.txt for examples of Leaflet "features"
+      $visitor_feature = array(
+        'type' => 'point',
+        'lat' => $visitor_location['latitude'],
+        'lon' => $visitor_location['longitude'],
+        'popup' => t('Your retrieved location'),
+        'tooltip' => t('Your retrieved location'),
+      );
+      if ($visitor_marker_color != '') {
+        $visitor_feature['icon'] = array(
+          'iconUrl' => $icon_path . "/$visitor_marker_color.png",
+          'iconSize' => array('x' => $marker_width, 'y' => $marker_height),
+          'iconAnchor' => array('x' => (int)(($marker_width + 1) / 2), 'y' => $marker_height), // center of baseline
+          'popupAnchor' => array('x' => 0, 'y' => -$marker_height - 1), // just above topline, center
         );
       }
-      else { // parsed by leaflet_process_geofield(), see _ip_geoloc_plugin_style_extract_lat_lng()
-        $feature = (array)$location;
-      }
-      $feature['popup'] = $location->balloon_text;
+      $features[] = $visitor_feature;
+    }
 
+    foreach ($locations as $key => $location) {
+      $feature = array(
+        'type' => 'point',
+        'lat' => $location->latitude,
+        'lon' => $location->longitude,
+        'popup' => $location->balloon_text,
+      //'leaflet_id' => $key
+      );
       if (!empty($location->marker_tooltip)) {
         $has_special_markers = TRUE;
         $feature['tooltip'] = $location->marker_tooltip;
@@ -325,26 +327,6 @@ class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
         );
       }
       $features[] = $feature;
-    }
-    if ($visitor_marker_color != 'none' && isset($visitor_location['latitude'])) {
-      // See leaflet/README.txt for examples of Leaflet "features"
-      $visitor_feature = array(
-        'type' => 'point',
-        'lat' => $visitor_location['latitude'],
-        'lon' => $visitor_location['longitude'],
-        'popup' => t('Your retrieved location'),
-        'tooltip' => t('Your retrieved location'),
-        'flags' => LEAFLET_MARKERCLUSTER_EXCLUDE_FROM_CLUSTER // see leaflet_markercluster.drupal.js
-      );
-      if ($visitor_marker_color != '') {
-        $visitor_feature['icon'] = array(
-          'iconUrl' => $icon_path . "/$visitor_marker_color.png",
-          'iconSize' => array('x' => $marker_width, 'y' => $marker_height),
-          'iconAnchor' => array('x' => (int)(($marker_width + 1) / 2), 'y' => $marker_height), // center of baseline
-          'popupAnchor' => array('x' => 0, 'y' => -$marker_height - 1), // just above topline, center
-        );
-      }
-      $features[] = $visitor_feature;
     }
     // If auto-box is chosen ($center_option==0), zoom only when there are 0 or 1 markers [#1863374]
     if (empty($center_option) && count($features) > 1) {
@@ -389,7 +371,7 @@ class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
         leaflet_markercluster_preprocess_leaflet_map($vars);
       }
       else {
-        drupal_set_message(t('Cannot cluster - Leaflet MarkerCluster module not enabled.'), 'warning');
+        drupal_set_message(t('Cannot cluster - Leaflet Markercluster module not enabled.'), 'warning');
       }
     }
 
@@ -399,17 +381,6 @@ class ip_geoloc_plugin_style_leaflet extends views_plugin_style {
       'view' => $this->view
     ));
     return $output;
-  }
-}
-
-function _ip_geoloc_get_center($location) {
-  if (empty($location->type) || $location->type == 'point') {
-    $lat = isset($location->lat) ? $location->lat : (isset($location->latitude)  ? $location->latitude  : 0.0);
-    $lon = isset($location->lon) ? $location->lon : (isset($location->longitude) ? $location->longitude : 0.0);
-    return array('lat' => $lat, 'lon' => $lon);
-  }
-  if (!empty($location->component[0]['points'][0])) {
-    return $location->component[0]['points'][0];
   }
 }
 

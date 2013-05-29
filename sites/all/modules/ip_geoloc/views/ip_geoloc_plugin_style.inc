@@ -20,57 +20,20 @@ define('IP_GEOLOC_MAP_CENTER_ON_LOCATION_FROM_ARGUMENT', 5);
 
 function ip_geoloc_plugin_style_bulk_of_form($views_plugin_style, &$form, &$form_state) {
 
-  $fields = ip_geoloc_get_display_fields($views_plugin_style->display->handler, TRUE);
-
-  $field_options = $fields;
-  $field_options['---'] = '[' . t('Type a field name') . ']';
-  $selected_option = $views_plugin_style->options['ip_geoloc_views_plugin_latitude'];
-  if (!isset($field_options[$selected_option])) {
-    $selected_option = '---';
-  }
   $form['ip_geoloc_views_plugin_latitude'] = array(
     '#title' => t('Name of latitude field in Views query'),
-    '#type' => 'select',
-    '#options' => $field_options,
-    '#default_value' => $selected_option,
-  );
-  $form['ip_geoloc_views_plugin_latitude_text'] = array(
     '#type' => 'textfield',
     '#default_value' => $views_plugin_style->options['ip_geoloc_views_plugin_latitude'],
-    '#states' => array(
-      'visible' => array(
-        ':input[name="style_options[ip_geoloc_views_plugin_latitude]"]' => array('value' => '---'),
-      )
-    )
-  );
-  $form['ip_geoloc_views_plugin_latitude_desc'] = array(
-    '#type' => 'item',
-    '#markup' => t('Select the field holding the latitude from the dropdown above.<br/><strong>Special cases</strong> If the View has relationships and lat/lon are accessed via the relationships, select <em>[Type field name]</em> and enter the field name in the additional text box presented. If you use a view based on the <strong>Location</strong> module, enter <strong>location_latitude</strong>. If the latitude is stored in a <strong>field</strong>, then enter the field\'s machine name. For instance, when using the <strong>Geofield</strong>, <strong>Geolocation field</strong> or <strong>Get Locations</strong> modules enter <strong>field_<em>yourfieldname</em></strong>. Valid field names are on <a href="!url">this page</a>. For IP Geolocation Views and Maps <em>visitor</em> data, enter <strong>ip_geoloc_latitude</strong>.', array(
-       '!url' => url('admin/reports/fields')
+    '#description' => t('If you use a view based on the <strong>Location</strong> module, enter <strong>location_latitude</strong>. If the latitude is stored in a <strong>field</strong>, then enter the field\'s machine name. For instance, when using the <strong>Geofield</strong>, <strong>Geolocation field</strong> or <strong>Get Locations</strong> modules enter <strong>field_<em>yourfieldname</em></strong>. Valid field names are on <a href="!url1">this page</a>. For IP Geolocation Views and Maps <em>visitor</em> data, enter <strong>ip_geoloc_latitude</strong>. If your View involves other modules or relationships, prefix the name with the relevant table name(s), delimited by underscores.', array(
+      '!url1' => url('admin/reports/fields'),
+      '!url2' => url('http://drupal.org/project/efq_views')
     ))
   );
-  $selected_option = $views_plugin_style->options['ip_geoloc_views_plugin_longitude'];
-  if (!isset($field_options[$selected_option])) {
-    $selected_option = '---';
-  }
   $form['ip_geoloc_views_plugin_longitude'] = array(
     '#title' => t('Name of longitude field in Views query'),
-    '#type' => 'select',
-    '#options' => $field_options,
-    '#default_value' => $selected_option,
-  );
-  $form['ip_geoloc_views_plugin_longitude_text'] = array(
     '#type' => 'textfield',
     '#default_value' => $views_plugin_style->options['ip_geoloc_views_plugin_longitude'],
-    '#states' => array(
-      'visible' => array(
-        ':input[name="style_options[ip_geoloc_views_plugin_longitude]"]' => array('value' => '---'),
-      )
-    )
-  );
-  $form['ip_geoloc_views_plugin_longitude_desc'] = array(
-    '#type' => 'item',
-    '#markup' => t('See comments above. When using the <strong>Geofield</strong>, <strong>Geolocation field</strong> or <strong>Get Locations</strong> modules select <em>&lt;none&gt;</em>.'),
+    '#description' => t('See comments above. When using the <strong>Geofield</strong>, <strong>Geolocation field</strong> or <strong>Get Locations</strong> modules you can leave this field empty.')
   );
 
   $differentiator = isset($form_state['differentiator'])
@@ -100,6 +63,7 @@ function ip_geoloc_plugin_style_bulk_of_form($views_plugin_style, &$form, &$form
     '#suffix' => '</div>'
   );
 
+  $fields = ip_geoloc_get_display_fields($views_plugin_style->display->handler, TRUE);
   $instances = ip_geoloc_get_field_instances($differentiator);
   $instance = reset($instances);
 
@@ -198,27 +162,8 @@ function ip_geoloc_plugin_style_bulk_of_form($views_plugin_style, &$form, &$form
       : t('*) If you choose the first option you may center the map via the special <strong>Map options</strong> <em>"centerLat"</em> and <em>"centerLng"</em> for example:<br/>%center_example', array(
           '%center_example' => '{ "mapTypeId":"terrain", "centerLat":-37.8, "centerLng":145 }'))
   );
-  $form['empty_map_center'] = array(
-    '#title' => t('Show map centered on these coordinates, if there are no locations to show'),
-    '#type' => 'textfield',
-    '#size' => 30,
-    '#default_value' => $views_plugin_style->options['empty_map_center'],
-    '#description' => t('Enter latitude then longitude separated by a space or comma, or the word %visitor.<br/>If left blank, the map canvas will be suppressed when there are no locations to show. If you wish, you may use the <strong>No results behavior</strong> panel in the Advanced section of the Views UI to show an alternative text or content.', array(
-      '%visitor' => t('visitor')))
-  );
-  return $form;
-}
 
-/**
- * Validation for ip_geoloc_plugin_style_bulk_of_form().
- */
-function ip_geoloc_plugin_style_bulk_of_form_validate(&$form, &$form_state) {
-  if ($form_state['values']['style_options']['ip_geoloc_views_plugin_latitude'] == '---') {
-    $form_state['values']['style_options']['ip_geoloc_views_plugin_latitude'] = $form_state['values']['style_options']['ip_geoloc_views_plugin_latitude_text'];
-  }
-  if ($form_state['values']['style_options']['ip_geoloc_views_plugin_longitude'] == '---') {
-    $form_state['values']['style_options']['ip_geoloc_views_plugin_longitude'] = $form_state['values']['style_options']['ip_geoloc_views_plugin_longitude_text'];
-  }
+  return $form;
 }
 
 /**
@@ -494,7 +439,9 @@ function ip_geoloc_plugin_style_extract_locations($views_plugin_style) {
   $error_count = 0;
   foreach ($views_plugin_style->view->result as $i => $row) {
 
-    if ($location = (object)_ip_geoloc_plugin_style_extract_lat_lng($row, $latitude, $longitude)) {
+    $location = _ip_geoloc_plugin_style_extract_lat_lng($row, $latitude, $longitude);
+
+    if ($location) {
       // Remaining row values go into the balloon
       if (!empty($views_plugin_style->rendered_fields[$i])) {
         $location->balloon_text = implode('<br/>', $views_plugin_style->rendered_fields[$i]);
@@ -514,27 +461,13 @@ function ip_geoloc_plugin_style_extract_locations($views_plugin_style) {
       $locations[] = $location;
     }
     elseif ($error_count++ == 0) {
-      $first_error = $i;
+      $first_error = $i + 1;
     }
   }
   global $user;
-  if ($error_count && $user->uid == 1) {
-    $row_count = count($views_plugin_style->view->result);
-    if ($error_count >= $row_count) {
-      drupal_set_message(t('None of the @total View result rows had their %latitude lat/lng set. Therefore the map could not be displayed. Is %latitude the correct field name?', array(
-        '@total' => $row_count, '%latitude' => $latitude)), 'warning');
-      $first_error = 0;
-    }
-    else {
-      drupal_set_message(t('Out of a total of @total View result rows, @error_count rows did not have their %latitude lat/lng set and therefore could not be shown on the map. The first row that could not be located was row #@first. You can improve execution efficiency by using the Views UI to apply an "is not empty" filter criterion to %latitude.', array(
-        '@error_count' => $error_count, '@total' => $row_count, '@first' => $first_error+1, '%latitude' => $latitude)), 'warning');
-    }
-    drupal_set_message(t('The above message is shown only to user 1'), 'warning');
-    $row_contents = t('First error row: ') . '<br/>';
-    foreach ($views_plugin_style->view->result[$first_error] as $field_name => $value) {
-      $row_contents .= "<strong>$field_name</strong> = " . print_r($value, TRUE) . '<br/>';
-    }
-    ip_geoloc_debug($row_contents, 'warning');
+  if ($error_count > 1 && $user->uid == 1) {
+    drupal_set_message(t('A total of @error_count View result rows did not have their %latitude lat/lng set and could therefore not be shown on the map. The first was row #@first. To improve efficiency you may want to apply a "not empty" filter to %latitude.', array(
+      '@error_count' => $error_count, '@first' => $first_error, '%latitude' => $latitude)), 'warning');
   }
   // Allow other modules to implement hook_ip_geoloc_marker_locations_alter(&$locations, &$view)
   drupal_alter('ip_geoloc_marker_locations', $locations, $views_plugin_style->view);
@@ -542,13 +475,6 @@ function ip_geoloc_plugin_style_extract_locations($views_plugin_style) {
   return $locations;
 }
 
-/**
- *
- * @param array $row, View result row
- * @param string $latitude, name of the row field that holds latitude
- * @param string $longitude, name of the row field that holds longitude
- * @return location object -- @todo return array for consistency with Leaflet?
- */
 function _ip_geoloc_plugin_style_extract_lat_lng($row, $latitude, $longitude) {
 
   $delta = &drupal_static(__FUNCTION__);
@@ -576,37 +502,22 @@ function _ip_geoloc_plugin_style_extract_lat_lng($row, $latitude, $longitude) {
   if (!empty($base)) {
 
     if (isset($base['geo_type'])) { // Geofield
-
-      // Quick fix: take advantage of Leaflet module, if enabled.
-      // @todo generalise Leaflet code and incorporate here.
-      if (function_exists('leaflet_process_geofield')) {
-        // Support WKT lines and polygons in Leaflet. Call requires:
-        // $base['geo_type'] eg 'point' or 'linestring'
-        // $base['geom'] eg. 'POINT(145 -37)' or 'LINESTRING(145 -37, 146, -38)'
-        if (!isset($base['wkt'])) {
-          $base['wkt'] = $base['geom']; // until fixed in leaflet_process_geofield()
+      $is_point = ($base['geo_type'] == 'point');
+      if ($is_point) { // wkt more accurate than lat,lon in Geofield 7.x-1.x
+        $point = empty($base['geom']) ? $base['wkt'] : $base['geom'];
+        // @todo Consider using
+        // $geometry = geoPHP::load($base['geom']);
+        // $location = json_decode($geometry->out('json'));
+        $is_point = (drupal_substr(trim($point), 0, 7) == 'POINT (');
+        if ($is_point) {
+          $parts = explode(' ', drupal_substr($point, 7));
+          $is_point = count($parts) > 1;
         }
-        $location = leaflet_process_geofield(array($base));
-        $location = (object)reset($location);
       }
-      else {
-        $is_point = ($base['geo_type'] == 'point');
-        if ($is_point) { // wkt more accurate than lat,lon in Geofield 7.x-1.x
-          $point = empty($base['geom']) ? $base['wkt'] : $base['geom'];
-          // @todo Consider using the following:
-          // $geometry = geoPHP::load($base['geom']);
-          // $location = json_decode($geometry->out('json'));
-          $is_point = (drupal_substr(trim($point), 0, 7) == 'POINT (');
-          if ($is_point) {
-            $parts = explode(' ', drupal_substr($point, 7));
-            $is_point = count($parts) > 1;
-          }
-        }
-        // $is_point==FALSE may indicate a MULTIPOINT cluster, which has its
-        // averaged center on 'lat' and 'lon' indices.
-        $location->longitude = $is_point ? (float)$parts[0] : $base['lon'];
-        $location->latitude  = $is_point ? (float)$parts[1] : $base['lat'];
-      }
+      // $is_point==FALSE may indicate a MULTIPOINT cluster, which has its
+      // averaged center on 'lat' and 'lon' indices.
+      $location->longitude = $is_point ? (float)$parts[0] : $base['lon'];
+      $location->latitude  = $is_point ? (float)$parts[1] : $base['lat'];
     }
     elseif (isset($base['lng'])) { // GeoLocation
       $location->latitude  = $base['lat'];
@@ -616,39 +527,36 @@ function _ip_geoloc_plugin_style_extract_lat_lng($row, $latitude, $longitude) {
       $location->latitude  = $base['latitude'];
       $location->longitude = $base['longitude'];
     }
-    elseif (isset($row->{'field_' . $latitude }[$delta]['raw']['value'])) { // Other module
+    else { // Other module
       // Field values tend to be inside ...[0]['raw']['value']:
       $location->latitude  = $row->{'field_' . $latitude }[$delta]['raw']['value'];
       $location->longitude = $row->{'field_' . $longitude}[$delta]['raw']['value'];
     }
   }
-  // empty $base:
-  elseif (isset($row->{$latitude}) && isset($row->{$longitude})) {
+  elseif (!empty($row->{$latitude}) && !empty($row->{$longitude})) {
     // If not node fields then db table fields...
     $location->latitude  = $row->{$latitude};
     $location->longitude = $row->{$longitude};
   }
-  return isset($location->type) || isset($location->latitude) ? $location : NULL;
+  return isset($location->latitude) ? $location : NULL;
 }
 
 function _ip_geoloc_plugin_style_base($row, $field_name, $delta) {
   if (!isset($row) || !isset($field_name) || !isset($delta)) {
     return NULL;
   }
-  if (isset($row->{$field_name}) && is_array($row->{$field_name})) {
-    if (!empty($row->{$field_name}[$delta]['raw'])) {
-      return $row->{$field_name}[$delta]['raw'];
-      // For Geofield, Geolocation Field or Get Location modules lat/long are as follows:
-      // Geofield     : field_<field_name>[0]['raw']['geom'], eg POINT (144.976 -37.813) or MULTIPOINT ( (),(),() )
-      // Geolocation  : field_<field_name>[0]['raw']['lat']      and field_<field_name>[0]['raw']['lng']
-      // Get Locations: field_<field_name>[0]['raw']['latitude'] and field_<field_name>[0]['raw']['longitude']
-    }
-    $lang = LANGUAGE_NONE;
-    if (!empty($row->{$field_name}[$lang][$delta])) { // EntityFieldQuery Views Backend
-      // For Geofield module lat/long are as follows (note: no extra field_ prefix)
-      // <field_name>['und]['0']['wkt'], eg POINT (144.976 -37.813) or MULTIPOINT ( (),(),() )
-      return $row->{$field_name}[$lang][$delta];
-    }
+  if (!empty($row->{$field_name}[$delta]['raw'])) {
+    return $row->{$field_name}[$delta]['raw'];
+    // For Geofield, Geolocation Field or Get Location modules lat/long are as follows:
+    // Geofield     : field_<field_name>[0]['raw']['geom'], eg POINT (144.976 -37.813) or MULTIPOINT ( (),(),() )
+    // Geolocation  : field_<field_name>[0]['raw']['lat']      and field_<field_name>[0]['raw']['lng']
+    // Get Locations: field_<field_name>[0]['raw']['latitude'] and field_<field_name>[0]['raw']['longitude']
+  }
+  $lang = LANGUAGE_NONE;
+  if (!empty($row->{$field_name}[$lang][$delta])) { // EntityFieldQuery Views Backend
+    // For Geofield module lat/long are as follows (note: no extra field_ prefix)
+    // <field_name>['und]['0']['wkt'], eg POINT (144.976 -37.813) or MULTIPOINT ( (),(),() )
+    return $row->{$field_name}[$lang][$delta];
   }
   return NULL;
 }
@@ -727,8 +635,6 @@ function ip_geoloc_plugin_style_render_fields($views_plugin_style) {
   $views_plugin_style->rendered_fields = array();
   $field_ids = array_keys($views_plugin_style->view->field);
   $differentiator = $views_plugin_style->options['differentiator']['differentiator_field'];
-  $latitude = trim($views_plugin_style->options['ip_geoloc_views_plugin_latitude']);
-  $longitude = trim($views_plugin_style->options['ip_geoloc_views_plugin_longitude']);
 
   foreach ($views_plugin_style->view->result as $i => &$row) {
     $views_plugin_style->view->row_index = $i; // God knows why we need this...
@@ -738,10 +644,9 @@ function ip_geoloc_plugin_style_render_fields($views_plugin_style) {
       $field_value = $field->theme($row);
 
       // Add the special 'views_' fields that normally aren't in the results
-      // set to the row, if required for the $differentiator or lat/lon that
-      // have math expressions applied through the Views UI.
+      // set to the row, if required for the $differentiator.
       $special_field_id = 'views_' . $field_id;
-      if (($special_field_id == $differentiator || $special_field_id == $latitude || $special_field_id == $longitude) && empty($row->{$special_field_id})) {
+      if ($special_field_id == $differentiator && empty($row->{$special_field_id})) {
         $row->{$special_field_id}[] = $field_value;
       }
       // If Excluded is ticked, we don't style and add the field to the rendered_fields.

@@ -339,9 +339,7 @@ function ip_geoloc_format_address(&$location) {
   if (!empty($location['postal_code']) && $location['postal_code'] != '-') {
     $location['formatted_address'] .= ' ' . $location['postal_code'] . ',';
   }
-  if (!empty($location['country'])) {
-    $location['formatted_address'] .= ' ' . $location['country'];
-  }
+  $location['formatted_address'] .= ' ' . $location['country'];
   $location['formatted_address'] = trim($location['formatted_address']);
 }
 
@@ -457,7 +455,7 @@ function ip_geoloc_form_alter(&$form, &$form_state) {
  * the $location array as much as it can. Used here to format the address.
  */
 function ip_geoloc_smart_ip_get_location_alter(&$location) {
-  if (empty($location['postal_code']) && isset($location['zip'])) {
+  if (empty($location['postal_code'])) {
     $location['postal_code'] = $location['zip'];
   }
   ip_geoloc_format_address($location);
