@@ -1,0 +1,48 @@
+<?php
+/**
+ * @file
+ * Code for the Stalkerspace module.
+ */
+
+/**
+ * Implements hook_menu
+ */
+function stalkerspace_menu() {
+  $items = array();
+  $items['admin/config/system/stalkerspace'] = array(
+    'title' => 'Stalkerspace',
+    'description' => 'Access administrative pages for Stalkerspace',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stalkerspace_admin_page'),
+    'file' => 'stalkerspace.admin.inc',
+    'access arguments' => array('administer stalkerspace'),
+    'weight' => -10,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permissions
+ */
+function stalkerspace_permission() {
+  return array(
+    'administer stalkerspace' => array(
+      'title' => t('Stalkerspace'),
+      'description' => t('Allows administrative access to stalkerspace settings'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_init
+ */
+function stalkerspace_init() {
+  $path_alias = drupal_get_path_alias();
+
+  $include_pages = variable_get('ip_geoloc_include_pages', '*');
+  if (drupal_match_path($path_alias, $include_pages)) {
+    drupal_add_js(drupal_get_path('module', 'stalkerspace') . '/stalkerspace_geolocation.js', 'file');
+  }
+}
