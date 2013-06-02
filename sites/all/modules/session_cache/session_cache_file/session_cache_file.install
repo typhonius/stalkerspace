@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * @file
+ * session_cache_file.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function session_cache_file_uninstall() {
+  require_once 'session_cache_file.module';
+  $session_cache_root = session_cache_file_directory();
+  if ($session_cache_root) {
+    // Delete session cache root and all directories and files below it.
+    session_cache_file_rrmdir($session_cache_root);
+  }
+}
+
+/**
+ * Recursively delete a directory and all files in it.
+ * 
+ * PHP's rmdir() only deletes if the directory is empty.
+ *
+ * @param string $dir
+ */
+function session_cache_file_rrmdir($dir) {
+ if (is_dir($dir)) {
+   $files = scandir($dir);
+   foreach ($files as $file) {
+     if ($file != '.' && $file != '..') {
+       if (is_dir("$dir/$file")) {
+         session_cache_file_rrmdir("$dir/$file");
+       }
+       else {
+         unlink("$dir/$file");
+       }
+     }
+   }
+   return rmdir($dir);
+ }
+ return FALSE;
+}
+

@@ -1,0 +1,13 @@
+name = Geolocation Views
+description = Provides a Views style plugin for geolocation field.
+package = Geolocation
+core = 7.x
+dependencies[] = geolocation
+files[] = geolocation_views_plugin_style_google_map.inc
+
+; Information added by drupal.org packaging script on 2013-04-30
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "geolocation_views"
+datestamp = "1367283896"
+

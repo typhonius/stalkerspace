@@ -1,0 +1,161 @@
+<?php
+/**
+ * @file
+ * session_cache.module
+ *
+ * A pluggable user session access facility for programmers who want a simple
+ * two-function API that is independent of the actual storage mechanism.
+ * Used in particular to avoid $_SESSION as the storage mechanism, so that
+ * anonymous user sessions can be used in the context of Varnish.
+ *
+ * The database storage mechanism uses core's cache.inc.
+ *
+ * See README.txt for details.
+ */
+define('SESSION_CACHE_STORAGE_COOKIE',  3);
+define('SESSION_CACHE_STORAGE_DB_CORE', 2);
+define('SESSION_CACHE_STORAGE_SESSION', 1);
+
+define('SESSION_CACHE_DEFAULT_EXPIRATION_DAYS', 7);
+
+/**
+ * Write the supplied data to the user session, whatever the storage mechanism may be.
+ *
+ * @param string $bin, unique id eg a string prefixed by the module name
+ * @param $data, use NULL to delete the bin; it may be refilled at any time
+ */
+function session_cache_set($bin, $data) {
+
+  if (!isset($bin)) {
+    return;
+  }
+  $method = variable_get('session_cache_storage_method', SESSION_CACHE_STORAGE_SESSION);
+
+  switch ($method) {
+
+    case SESSION_CACHE_STORAGE_COOKIE:
+      // Tell the browser to return the cookie only via HTTP or HTTPS, to any
+      // path under the root of this server.
+      // Don't use "global $cookie_domain", as it may contain the invalid '.localhost'!
+      $cookie_domain = ini_get('session.cookie_domain');
+      if ($data == NULL) {
+        // Make it an empty cookie that expires when the browser is closed.
+        setcookie("Drupal.session_cache.$bin", NULL, 0, '/', $cookie_domain, NULL, TRUE);
+        return;
+      }
+      $serialized_data = serialize($data);
+      setcookie("Drupal.session_cache.$bin", $serialized_data, session_cache_expiration_time(), '/', $cookie_domain, NULL, TRUE);
+      // Make sure that subsequent session_cache_get() calls get the data
+      // updated here, not what was in the cookie at the start of the request!
+      // Note that in array indices '.' are converted to '_'
+      $_COOKIE["Drupal_session_cache_$bin"] = $serialized_data;
+      return;
+
+    case SESSION_CACHE_STORAGE_DB_CORE:
+      $sid = session_cache_get_sid();
+      if ($data == NULL) {
+        cache_clear_all("$bin:$sid", 'cache_session_cache');
+        return;
+      }
+      cache_set("$bin:$sid", $data, 'cache_session_cache', session_cache_expiration_time());
+      return;
+
+    case SESSION_CACHE_STORAGE_SESSION:
+      $_SESSION[$bin] = $data; // $data==NULL means unset()
+      return;
+
+    default:
+      module_invoke_all('session_cache_set', $method, $bin, $data);
+  }
+}
+
+/**
+ * Read data from the user session, given its bin id.
+ *
+ * @param string $bin, unique id eg a string prefixed by the module name
+ */
+function session_cache_get($bin) {
+
+  if (!isset($bin)) {
+    return NULL;
+  }
+  $method = variable_get('session_cache_storage_method', SESSION_CACHE_STORAGE_SESSION);
+  switch ($method) {
+
+    case SESSION_CACHE_STORAGE_COOKIE:
+      // Note that in array indices '.' are converted to '_'
+      return isset($_COOKIE["Drupal_session_cache_$bin"]) ? unserialize($_COOKIE["Drupal_session_cache_$bin"]) : NULL;
+
+    case SESSION_CACHE_STORAGE_DB_CORE:
+      $sid = session_cache_get_sid();
+      $cache = cache_get("$bin:$sid", 'cache_session_cache');
+      return is_object($cache) ? $cache->data : NULL;
+
+    case SESSION_CACHE_STORAGE_SESSION:
+      return isset($_SESSION) && isset($_SESSION[$bin]) ? $_SESSION[$bin] : NULL;
+
+    default:
+      return module_invoke_all('session_cache_get', $method, $bin);
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function session_cache_cron() {
+  if (variable_get('session_cache_storage_method') == SESSION_CACHE_STORAGE_DB_CORE) {
+    // Delete only the expired cache_session_cache entries.
+    // Note: to avoid the clear() function setting $_SESSION['cache_expiration'][..],
+    // the cache lifetime should not be configured, ie cache_lifetime==0.
+    // This will also stop the cache's garbage collection.
+    cache_clear_all(NULL, 'cache_session_cache');
+  }
+}
+
+/**
+ * Returns an identifier for the current user session.
+ *
+ * Typically only called when a database storage mechanism is used.
+ *
+ * @return sid
+ */
+function session_cache_get_sid() {
+  global $user;
+
+  if (!empty($user->uid) && variable_get('session_cache_use_uid_as_sid', FALSE)) {
+    return 'user' . $user->uid; // good if concurrent sessions for the same authenticated user are NOT required
+  }
+  if (empty($_COOKIE['Drupal_session_cache_sid'])) {
+
+    // Don't use core's session id. Security not a problem, so keep it short.
+    $sid = drupal_substr(session_id(), 0, 12);
+    // If setcookie() fails, then everything still works, but a new session will
+    // be created when logging in or out.
+    // Don't use "global $cookie_domain", as '.localhost' is invalid!
+    $cookie_domain = ini_get('session.cookie_domain');
+    setcookie('Drupal.session_cache.sid', $sid, session_cache_expiration_time(), '/', $cookie_domain, NULL, TRUE);
+  }
+  else {
+    $sid = $_COOKIE['Drupal_session_cache_sid'];
+  }
+  return $sid;
+}
+
+function session_cache_expiration_time() {
+  return REQUEST_TIME + 24*60*60 * variable_get('session_cache_expire_period', SESSION_CACHE_DEFAULT_EXPIRATION_DAYS);
+}
+
+/**
+ * Implements hook_menu().
+ */
+function session_cache_menu() {
+  $items['admin/config/development/session_cache'] = array(
+    'title' => 'Session Cache API',
+    'description' => 'Select the session storage mechanism.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('session_cache_admin_config'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'session_cache.admin.inc'
+  );
+  return $items;
+}

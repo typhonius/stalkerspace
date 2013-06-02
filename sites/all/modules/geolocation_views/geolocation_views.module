@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file
+ * Views style plugin for Geolocation.
+ */
+
+/**
+ * Implements hook_views_api()
+ */
+function geolocation_views_views_api() {
+  return array('api' => 3);
+}
+
