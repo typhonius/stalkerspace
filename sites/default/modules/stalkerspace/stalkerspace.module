@@ -51,10 +51,51 @@ function stalkerspace_init() {
  * Implements hook_form_FORM_ID_alter
  */
 function stalkerspace_form_confession_node_form_alter(&$form, &$form_state, $form_id) {
+  drupal_set_title(t('Confess'), PASS_THROUGH);
   $query = drupal_get_query_parameters();
   if ($query['space']) {
     // They're radios right now so don't need to do array of default values
     $form['og_group_ref']['und'][0]['default']['#default_value'] = $query['space'];
+    $form['og_group_ref']['#access'] = FALSE;
+  }
+  $form['stalkerspace'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Stalkerspace'),
+  );
+  unset($form['body']['und'][0]['#title']);
+  $form['title']['#required'] = FALSE;
+  $form['stalkerspace']['title'] = $form['title'];
+  $form['stalkerspace']['#weight'] = $form['title']['#weight'] + 7;
+  $form['title']['#access'] = FALSE;
+  $form['group_content_access']['#access'] = user_access('bypass node access'); 
+//  $form['#validate'][] = 'stalkerspace_confession_form_validate';
+}
+
+/**
+ * Implements hook_node_validate
+ */
+function stalkerspace_node_validate($node, $form, &$form_state) {
+// this doesn't work atm but we want to somehow allow the title to be overridden by the body OR 
+// by the title field which is now optional
+  if ($node->type == 'confession') {
+//    $form_state['values']['title'] = $form_state['input']['title'] ?: check_markup(truncate_utf8(strip_tags($form_state['input']['body']['und'][0]['value']), 30, TRUE, FALSE, 10), filter_fallback_format(), FALSE);
+
+// TODO this NEEDS a review 
+    $form_state['values']['title'] = $form_state['input']['title'] ?: truncate_utf8(strip_tags($form_state['input']['body']['und'][0]['value']), 30, TRUE, FALSE, 10);
+
+    //dd($form_state);
+    //dd($title);
+  }
+}
+
+/**
+ * Implements hook_node_presave
+ */
+function stalkerspace_node_presave($node) {
+  // Fill in the title for the user
+  if ($node->type == 'confession') {
   }
 }
 
@@ -79,6 +120,9 @@ function stalkerspace_block_view($delta = '') {
   $context = og_context();
 // Alter access to be only those users in the group (and admin?)
 // Otherwise perhaps offer the ability to join the group
+
+// TODO this NEEDS to have proper access permission
+// Consider adding to group context OR altering the text to the sign up link (still group context)
 
   switch ($delta) {
     case 'stalkerspace_create_content':
