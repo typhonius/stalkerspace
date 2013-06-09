@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Admin configuration settings for IPGV&M.
+ * Admin configuration settings for IP Geolocation.
  */
 
 /**
@@ -10,52 +10,10 @@
  */
 function ip_geoloc_admin_configure() {
 
-  $form['markers'] = array(
-    '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#title' => t('Alternative markers'),
-    '#description' => t('')
-  );
-  // @todo: cater for case where the module directory has been renamed?
-  $marker_path = drupal_get_path('module', 'ip_geoloc');
-  $form['markers']['ip_geoloc_marker_directory'] = array(
-    '#type' => 'textfield',
-    '#title' => t('<strong>Google Maps, Leaflet</strong>: path to set of marker images'),
-    '#default_value' => variable_get('ip_geoloc_marker_directory', "$marker_path/markers"),
-    '#description' => t('Should normally NOT start with a slash. All marker images in this directory must be .png files.')
-  );
-  $form['markers']['ip_geoloc_marker_dimensions'] = array(
-    '#type' => 'textfield',
-    '#title' => t('<strong>Google Maps, Leaflet</strong>: marker image width and height'),
-    '#default_value' => variable_get('ip_geoloc_marker_dimensions', '21 x 34'),
-    '#field_suffix' => 'px',
-    '#description' => t('These dimensions apply to all markers in the set. The default marker size is 21 x 34 for the <em>/markers</em> directory and 32 x 42 for the <em>/amarkers</em> directory.')
-  );
-  $form['markers']['ip_geoloc_marker_anchor_pos']= array(
-    '#title' => t('<strong>Google Maps, Leaflet</strong>: marker image anchor position'),
-    '#type' => 'select',
-    '#default_value' => variable_get('ip_geoloc_marker_anchor_pos', 'bottom'),
-    '#options' => array(
-      'top' => t('Center of topline'),
-      'middle' => t('Center of image'),
-      'bottom' => t('Center of baseline'),
-    ),
-    '#description' => t('This anchor position is applied to all markers in the set.')
-  );
-  $form['markers']['ip_geoloc_num_location_marker_layers'] = array(
-    '#type' => 'textfield',
-    '#title' => t('<strong>OpenLayers only</strong>: maximum number of marker layers you may need'),
-    '#default_value' => variable_get('ip_geoloc_num_location_marker_layers', IP_GEOLOC_DEF_NUM_MARKER_LAYERS),
-    '#description' => t('Only relevant when you have selected "differentiator" fields in your view.')
-  );
-
   if (ip_geoloc_diagnose() > 0) {
     // Form for sync-ing the geolocation table with the system accesslog
     $form['ip_geoloc_db_options'] = array(
       '#type' => 'fieldset',
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
       '#title' => t('Update IP geolocation database using past visitor IP addresses from the system access log'),
       '#description'  => t('You can update the IP geolocation database in batches by pressing the button below. As a rough guide, count on a 1 minute wait for every 100 IP addresses, when executing a web service like IPInfoDB, as employed by Smart IP. Add another 2 minutes per 100 IP addresses if you ticked the option to employ the Google Maps API to reverse-geocode to street addresses. If your server interrupts the process you can continue from where it stopped by refreshing this page and pressing the button again. You will not lose any data.')
     );
@@ -75,15 +33,13 @@ function ip_geoloc_admin_configure() {
 
   $form['ip_geoloc_data_collection_options'] = array(
     '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
     '#title' => t('Data collection options'),
   );
   $form['ip_geoloc_data_collection_options']['ip_geoloc_google_to_reverse_geocode'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Employ the Google Maps API to reverse-geocode HTML5 visitor locations to street addresses'),
+    '#title' => t('Employ the Google Maps API to reverse-geocode HTML5 visitor locations to street addresses.'),
     '#default_value' => variable_get('ip_geoloc_google_to_reverse_geocode', TRUE),
-    '#description' => t('For present and future visitors this is done via the Javascript version of the Maps API and the HTML5 way of obtaining a visitor\'s location. This involves them being prompted to accept sharing of their location. For the upload of historic visitor location data the server-side version of the Google Maps API is used. The latter is subject to a Google-imposed daily limit on the number of calls coming from the same server. <br/>If you are using IPGV&M only for one of the Views formats <strong>Map (..., via IPGV&M)</strong>, then you can safely untick this box.<br/>This option requires <a href="!url">Clean URLs</a> to be enabled.', array(
+    '#description' => t('For present and future visitors this is done via the Javascript version of the Maps API and the HTML5 way of obtaining a visitor\'s location. This involves them being prompted to accept sharing of their location. For the upload of historic visitor location data the server-side version of the Google Maps API is used. The latter is subject to a Google-imposed daily limit on the number of calls coming from the same server. <br/>If you are using IP Geolocation only for one of the Views formats <strong>Map (..., via IP Geolocation)</strong>, then you can safely untick this box.<br/>This option requires <a href="!url">Clean URLs</a> to be enabled.', array(
       '!url' => url('admin/config/search/clean-urls'))
     )
   );
@@ -111,7 +67,7 @@ function ip_geoloc_admin_configure() {
 
   $form['ip_geoloc_data_collection_options']['ip_geoloc_smart_ip_as_backup'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Employ Smart IP as a backup to the Google Maps JS API as well as declined or failed HTML5 location retrievals in Views'),
+    '#title' => t('Employ Smart IP as a backup to the Google Maps JS API as well as declined or failed HTML5 location retrievals in Views.'),
     '#default_value' => variable_get('ip_geoloc_smart_ip_as_backup', TRUE),
     '#description' => t('This refers to situations where the lat/long coords could not be established (e.g. because the browser/device is not supported or the user declined to share their location) or the Google Maps API reverse-geocode function failed or was not employed through the tick box above. Smart IP lookups tend to be less detailed than the Google Maps reverse-geocoded results.<br/>If this box is <strong>not</strong> ticked, but the <a href="@geoip">GeoIP API module</a> is enabled, then GeoIP will be used as the Google Maps API fallback and to load historic lat/long coordinates.', array(
       '@geoip' => url('http://drupal.org/project/geoip')
@@ -128,18 +84,48 @@ function ip_geoloc_admin_configure() {
   $form['ip_geoloc_advanced'] = array(
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+    '#collapsed' => FALSE,
     '#title' => t('Advanced options'),
   );
+  $form['ip_geoloc_advanced']['markers'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Alternative markers'),
+    '#description' => t('')
+  );
+  if (module_exists('openlayers')) {
+    $form['ip_geoloc_advanced']['markers']['ip_geoloc_num_location_marker_layers'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Maximum number of OpenLayers location marker layers you may need.'),
+      '#default_value' => variable_get('ip_geoloc_num_location_marker_layers', IP_GEOLOC_DEF_NUM_MARKER_LAYERS),
+      '#description' => t('Only relevant when you have selected "differentiator" fields in your views.')
+    );
+  }
+  else {
+    $form['ip_geoloc_advanced']['markers']['ip_geoloc_marker_directory'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Path to marker icons'),
+      '#default_value' => variable_get('ip_geoloc_marker_directory', drupal_get_path('module', 'ip_geoloc') . '/markers'),
+      '#description' => t('Should normally NOT start with a slash. All marker images must be .png files.')
+    );
+    $form['ip_geoloc_advanced']['markers']['ip_geoloc_marker_dimensions'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Marker icon width and height'),
+      '#default_value' => variable_get('ip_geoloc_marker_dimensions', '21 x 34'),
+      '#field_suffix' => 'px',
+      '#description' => t('These dimensions apply to all markers in the set. The marker anchor is expected to be the middle of the icon baseline. The default marker size is 21 x 34.')
+    );
+  }
   $form['ip_geoloc_advanced']['ip_geoloc_page_refresh'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Auto-refresh the page as soon as an HTML5 location update has come in'),
+    '#title' => t('Auto-refresh the page as soon as an HTML5 location update has come in.'),
     '#default_value' => variable_get('ip_geoloc_page_refresh', FALSE),
     '#description' => t('The above tick box does not apply to administration pages.')
   );
   $form['ip_geoloc_advanced']['ip_geoloc_debug'] = array(
     '#type' => 'textfield',
-    '#title' => t('Detail execution progress with status messages'),
+    '#title' => t('Detail execution progress with status messages.'),
     '#default_value' => variable_get('ip_geoloc_debug'),
     '#description' => t('Enter a comma-separated list of names of users that should see status messages coming from this module, e.g. for debugging purposes. Use <strong>anon</strong> for the anonymous user.')
   );

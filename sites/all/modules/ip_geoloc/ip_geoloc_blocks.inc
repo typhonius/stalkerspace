@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Blocks available in IP Geolocation Views & Maps.
+ * Blocks available in IP Geolocation.
  */
 
 /**
@@ -224,7 +224,7 @@ function ip_geoloc_address_lookup($form, &$form_state) {
   if (user_access('administer site configuration')) {
     $form['store'] = array(
       '#type' => 'checkbox',
-      '#title' => t('If found, store on IP geolocation database for future reference.'),
+      '#title' => t('If found, store on IP Geolocation database for future reference.'),
       '#default_value' => FALSE
     );
   }

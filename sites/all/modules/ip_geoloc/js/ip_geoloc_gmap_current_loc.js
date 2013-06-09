@@ -51,7 +51,7 @@
             addressText = response[0]['formatted_address'];
           }
           else {
-          //alert(Drupal.t('IPGV&M: Google address lookup failed with status code !code.', { '!code': status }));
+          //alert(Drupal.t('IP Geolocation displayMap(): Google address lookup failed with status code !code.', { '!code': status }));
           }
           // lat/long and address are revealed when clicking marker
           var lat = coords.latitude.toFixed(4);

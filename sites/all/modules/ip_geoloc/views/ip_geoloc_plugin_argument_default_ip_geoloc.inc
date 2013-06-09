@@ -2,7 +2,7 @@
 
 /**
  * @file
- * views/ip_geoloc_plugin_argument_default_ip_geoloc.inc
+ * views/ip_geoloc_plugin_argument_default_ip_geoloc.in
  */
 
 /**

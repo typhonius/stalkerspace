@@ -246,9 +246,7 @@ function ip_geoloc_output_map_multi_location($locations, $div_id = 'ip-geoloc-ma
     $center_option = 0, $center_latlng = array(0, 0), $visitor_location_gps = TRUE) {
 
   if ($visitor_location_gps) {
-    // End of life for the unified geo.js library. It slows things down and
-    // has become less relevant as all modern devices support the HTML5/W3C API
-    // drupal_add_js(IP_GEOLOC_GEO_JS, array('group' => JS_LIBRARY));
+    drupal_add_js(IP_GEOLOC_GEO_JS, array('group' => JS_LIBRARY));
     drupal_add_js(IP_GEOLOC_GOOGLE_MAPS_GPS, array('group' => JS_LIBRARY));
   }
   else {
@@ -270,16 +268,6 @@ function ip_geoloc_output_map_multi_location($locations, $div_id = 'ip-geoloc-ma
   $marker_dimensions = explode('x', variable_get('ip_geoloc_marker_dimensions', '21 x 34'));
   $marker_width  = (int)$marker_dimensions[0];
   $marker_height = (int)$marker_dimensions[1];
-  switch (variable_get('ip_geoloc_marker_anchor_pos', 'bottom')) {
-    case 'top':
-      $marker_anchor = 0;
-      break;
-    case 'middle':
-      $marker_anchor = (int)(($marker_height + 1) / 2);
-      break;
-    default:
-      $marker_anchor = $marker_height;
-  }
 
   ip_geoloc_debug(t('IP Geolocation: passing the following to Google Maps:'));
   ip_geoloc_debug(t('- map options %options:', array('%options' => $map_options)));
@@ -291,13 +279,11 @@ function ip_geoloc_output_map_multi_location($locations, $div_id = 'ip-geoloc-ma
     '@lng' => empty($center_latlng[1]) ? '-' : $center_latlng[1]
   )));
   ip_geoloc_debug(t('- marker directory : %dir', array('%dir' => $marker_directory)));
-  ip_geoloc_debug(t('- marker dimensions : w@w x h@h px, anchor: @a px', array('@w' => $marker_width, '@h' => $marker_height, '@a' => $marker_anchor)));
+  ip_geoloc_debug(t('- marker dimensions : w@w x h@h px', array('@w' => $marker_width, '@h' => $marker_height)));
   ip_geoloc_debug(t('- @count locations found', array('@count' => count($locations))));
   foreach ($locations as $location) {
-    $color = empty($location->marker_color) ? t('default') . " [$marker_color]" : $location->marker_color;
-    $coords = isset($location->latitude) ? $location->latitude . ', ' . $location->longitude : '';
-    $text = isset($location->balloon_text) ? $location->balloon_text : '';
-    $msg = '- ' . t('marker') . " $color ($coords)<br/>$text<br/>";
+    $color = isset($location->marker_color) ? $location->marker_color : t('default') . " ($marker_color)";
+    $msg = '- ' . t('marker') . ' ' . $color . ' (' . $location->latitude . ', ' . $location->longitude . ')<br/>' . $location->balloon_text . '<br/>';
     ip_geoloc_debug($msg);
   }
 
@@ -312,7 +298,6 @@ function ip_geoloc_output_map_multi_location($locations, $div_id = 'ip-geoloc-ma
     'ip_geoloc_multi_location_marker_directory' => $marker_directory,
     'ip_geoloc_multi_location_marker_width' => $marker_width,
     'ip_geoloc_multi_location_marker_height' => $marker_height,
-    'ip_geoloc_multi_location_marker_anchor' => $marker_anchor,
     'ip_geoloc_multi_location_marker_default_color' => $marker_color
   );
   drupal_add_js($settings, 'setting');
@@ -342,9 +327,7 @@ function ip_geoloc_output_map_multi_location($locations, $div_id = 'ip-geoloc-ma
  */
 function ip_geoloc_get_current_location($menu_callback = 'ip-geoloc-current-location') {
   $js_options = array('group' => JS_LIBRARY);
-  // End of life for the unified geo.js library. It slows things down and
-  // has become less relevant as all modern devices support the HTML5/W3C API
-  // drupal_add_js(IP_GEOLOC_GEO_JS, $js_options);
+  drupal_add_js(IP_GEOLOC_GEO_JS, $js_options);
   drupal_add_js(IP_GEOLOC_GOOGLE_MAPS_GPS, $js_options);
   drupal_add_js(drupal_get_path('module', 'ip_geoloc') . '/js/ip_geoloc_current_location.js');
 
@@ -533,19 +516,8 @@ function ip_geoloc_center_of_locations($locations, $center_of_gravity = FALSE) {
     $count = 0;
     $x = $y = $z = 0.0;
     foreach ($locations as $location) {
-      if (isset($location->lon)) {
-        $lng = $location->lon;
-        $lat = $location->lat;
-      }
-      elseif (isset($location->longitude)) {
-        $lng = $location->longitude;
-        $lat = $location->latitude;
-      }
-      else {
-        continue;
-      }
-      $lng = deg2rad($lng);
-      $lat = deg2rad($lat);
+      $lat = deg2rad($location->latitude);
+      $lng = deg2rad($location->longitude);
       // Convert to Cartesian coords and total the 3 dimensions independently.
       $x += cos($lat) * cos($lng);
       $y += cos($lat) * sin($lng);
@@ -561,26 +533,17 @@ function ip_geoloc_center_of_locations($locations, $center_of_gravity = FALSE) {
   }
   // Alternative method based on top & bottom latitude and left & right longitude
   $location = reset($locations);
-  $top = $bottom = isset($location->lat) ? $location->lat : $location->latitude;
-  $left = $right = isset($location->lon) ? $location->lon : $location->longitude;
+  $top = $bottom = $location->latitude;
+  $left = $right = $location->longitude;
   while ($location = next($locations)) {
-    if (isset($location->lon)) {
-      $lng = $location->lon;
-      $lat = $location->lat;
-    }
-    elseif (isset($location->longitude)) {
-      $lng = $location->longitude;
-      $lat = $location->latitude;
-    }
-    else {
-      continue;
-    }
+    $lat = $location->latitude;
     if ($lat > $top) {
       $top = $lat;
     }
     elseif ($lat < $bottom) {
       $bottom = $lat;
     }
+    $lng = $location->longitude;
     if ($lng < $left) {
       $left = $lng;
     }
