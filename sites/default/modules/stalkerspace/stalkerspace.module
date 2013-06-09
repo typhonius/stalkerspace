@@ -32,6 +32,7 @@ function stalkerspace_menu() {
 }
 
 function stalkerspace_all_content() {
+  // TODO we need to cache_set and cache_get here I think
   $nodequery = new StalkerspaceEntityFieldQuery();
 
   $result = $nodequery->fieldOrderBy('field_activity', 'radioactivity_energy', 'DESC')
@@ -41,6 +42,39 @@ function stalkerspace_all_content() {
   $output = node_view_multiple($nodes, 'stalkerspace');
 
   return $output;
+}
+
+/**
+ * Implements hook_node_view
+ */
+function stalkerspace_node_view($node, $node_view) {
+  $links = array();
+
+  if ($node->comment != COMMENT_NODE_HIDDEN) {
+    if ($view_mode != 'rss' && $view_mode != 'teaser' && $view_mode != 'search_index' && $view_mode != 'search_result') {
+      if ($node->comment == COMMENT_NODE_OPEN) {
+        $comment_form_location = variable_get('comment_form_location_' . $node->type, COMMENT_FORM_BELOW);
+        if (user_access('post comments')) {
+          if (user_access('access comments')) {
+            $links['comment-add'] = array(
+              'title' => t('Add new comment'),
+              'attributes' => array('title' => t('Share your thoughts and opinions related to this posting.')),
+              'href' => "node/$node->nid",
+              'fragment' => 'comment-form',
+            );
+            if ($comment_form_location == COMMENT_FORM_SEPARATE_PAGE) {
+              $links['comment-add']['href'] = "comment/reply/$node->nid";
+            }
+          }
+        }
+      }
+      $node->content['links']['comment'] = array(
+        '#theme' => 'links__node__comment',
+        '#links' => $links,
+        '#attributes' => array('class' => array('links', 'inline')),
+      );
+    }
+  }
 }
 
 /**
