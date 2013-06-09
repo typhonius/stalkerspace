@@ -74,9 +74,9 @@ function ip_geoloc_openlayers_layers() {
   $visitor_layer->description = "Layer to mark visitor's current position.";
   $visitor_layer->weight = -10;
   $visitor_layer->data = array(
-    'baselayer' => FALSE,
+    'isBaselayer' => FALSE,
     'layer_type' => 'openlayers_layer_type_raw',
-    'projection' => array('900913')
+    'projection' => array('EPSG:900913')
   );
   // Add the visitor's location as a single feature in its own layer, so
   // that it may be separately styled (eg marker colour) and activated on page
@@ -88,7 +88,7 @@ function ip_geoloc_openlayers_layers() {
     $visitor_layer->data['features'][] = array(
       'attributes' => array('name' => t('Your retrieved location.')),
       'wkt' => "POINT($longitude $latitude)",
-      'projection' => '4326'
+      'projection' => 'EPSG:4326'
     );
   }
   $layers[$visitor_layer->name] = $visitor_layer;
@@ -102,9 +102,9 @@ function ip_geoloc_openlayers_layers() {
     $marker_layer->description = "Layer to map a view's locations.";
     $marker_layer->weight = $visitor_layer->weight + $layer;
     $marker_layer->data = array(
-      'baselayer' => FALSE,
+      'isBaselayer' => FALSE,
       'layer_type' => 'openlayers_layer_type_raw',
-      'projection' => array('900913')
+      'projection' => array('EPSG:900913')
     );
     // Features, ie. location markers, are added based on the view output, see
     // file ip_geoloc_plugin_style_openlaysers.inc
@@ -131,6 +131,7 @@ function ip_geoloc_openlayers_layer_types() {
       'path' => drupal_get_path('module', 'openlayers') . '/plugins/layer_types',
       'file' => 'openlayers_layer_type_raw.inc',
       'layer_type' => array(
+        'file' => 'openlayers_layer_type_raw.inc',
         'class' => 'openlayers_layer_type_raw',
         'parent' => 'openlayers_layer_type',
       )

@@ -1,6 +1,5 @@
-name = IP Geolocation Views and maps
-description = Display Google, Leaflet and OpenLayers maps of Views containing locations of visitors and/or nodes. Various map centering options, e.g. visitor's HTML5-retrieved current position. Also an API for location-based services.
-;package = Location
+name = IP Geolocation Views & Maps
+description = Display Google, Leaflet and OpenLayers maps of Views containing locations of visitors and/or nodes. Marker color differentiation. Centering options, e.g. visitor's HTML5-retrieved current position. Also an API for location-based services.
 core = 7.x
 configure = admin/config/system/ip_geoloc
 
@@ -10,21 +9,21 @@ files[] = views/ip_geoloc_plugin_style_leaflet.inc
 files[] = views/ip_geoloc_plugin_style_openlayers.inc
 files[] = views/ip_geoloc_plugin_argument_default_ip_geoloc.inc
 
-; dependencies[] = session_cache
+dependencies[] = libraries
 ; The following aren't dependencies but are highly recommended to realise a
 ; rich feature set:
 ;   Statistics (core)
 ;   Views
 ;   Views-PHP
 ;   either Smart IP or GeoIP API
+;   Session Cache API
 ;
 ; Naturally to use OpenLayers or Leaflet maps, you'll need the OpenLayers and/or
 ; Leaflet modules.
-version = "7.x-1.x-dev"
 
-; Information added by drupal.org packaging script on 2013-04-25
-version = "7.x-1.20"
+; Information added by drupal.org packaging script on 2013-06-07
+version = "7.x-1.22"
 core = "7.x"
 project = "ip_geoloc"
-datestamp = "1366877412"
+datestamp = "1370587855"
 

@@ -9,9 +9,9 @@ dependencies[] = leaflet
 ; IP Geolocation Views and Maps (ip_geoloc) is required if you wish to center
 ; the demo maps on your current location, using HTML5 for position retrieval.
 
-; Information added by drupal.org packaging script on 2013-04-17
-version = "7.x-1.4"
+; Information added by drupal.org packaging script on 2013-06-05
+version = "7.x-1.5"
 core = "7.x"
 project = "leaflet_more_maps"
-datestamp = "1366182605"
+datestamp = "1370413854"
 

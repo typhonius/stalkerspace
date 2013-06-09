@@ -45,6 +45,31 @@ function ip_geoloc_help($path, $arg) {
 }
 
 /**
+ * Implements hook_library().
+ */
+function ip_geoloc_library() {
+
+  if (!($css_path = ip_geoloc_get_ccs_library_path('font-awesome'))) {
+    return NULL;
+  }
+  $libraries['ip_geoloc_font_awesome'] = array(
+    'title' => 'IP Geolocation Views & Maps Font Awesome extension',
+    'css' => array(
+      "$css_path/font-awesome.css" => array(
+        'type' => 'file',
+        'media' => 'screen',
+      )
+    )
+  );
+  return $libraries;
+}
+
+function ip_geoloc_get_ccs_library_path($lib_path = 'font-awesome') {
+  $path = libraries_get_path($lib_path);
+  return $path ? "$path/css" : FALSE;
+}
+
+/**
  * Implements hook_menu().
  *
  * Defines new menu items.
@@ -53,8 +78,8 @@ function ip_geoloc_menu() {
   $items = array();
   // Put the administrative settings under System on the Configuration page.
   $items['admin/config/system/ip_geoloc'] = array(
-    'title' => 'IP Geolocation Views and Maps',
-    'description' => 'Configure how geolocation information is updated.',
+    'title' => 'IP Geolocation Views & Maps',
+    'description' => 'Configure map markers and how geolocation information is updated.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ip_geoloc_admin_configure'),
     'access arguments' => array('administer site configuration'),
@@ -339,7 +364,9 @@ function ip_geoloc_format_address(&$location) {
   if (!empty($location['postal_code']) && $location['postal_code'] != '-') {
     $location['formatted_address'] .= ' ' . $location['postal_code'] . ',';
   }
-  $location['formatted_address'] .= ' ' . $location['country'];
+  if (!empty($location['country'])) {
+    $location['formatted_address'] .= ' ' . $location['country'];
+  }
   $location['formatted_address'] = trim($location['formatted_address']);
 }
 
@@ -455,7 +482,7 @@ function ip_geoloc_form_alter(&$form, &$form_state) {
  * the $location array as much as it can. Used here to format the address.
  */
 function ip_geoloc_smart_ip_get_location_alter(&$location) {
-  if (empty($location['postal_code'])) {
+  if (empty($location['postal_code']) && isset($location['zip'])) {
     $location['postal_code'] = $location['zip'];
   }
   ip_geoloc_format_address($location);

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Install and uninstall hooks for IP Geolocation.
+ * Install and uninstall hooks for IP Geolocation Views & Maps.
  */
 
 /**
@@ -10,7 +10,7 @@
  */
 function ip_geoloc_requirements($phase) {
   $t = get_t();
-  $requirements = array('ip_geoloc' => array());
+  $requirements = array();
 
   $geolocation_methods = array();
   if (variable_get('ip_geoloc_google_to_reverse_geocode', TRUE)) {
@@ -21,8 +21,8 @@ function ip_geoloc_requirements($phase) {
       $geolocation_methods[] = 'Smart IP';
     }
     else {
-      $requirements['ip_geoloc']['severity'] = REQUIREMENT_WARNING;
-      $requirements['ip_geoloc']['description'] = $t('Smart IP is configured as a backup in case the Google Maps reverse-geocode fails. However the Smart IP module is not enabled.');
+      $requirements['ip_geoloc_lbs']['severity'] = REQUIREMENT_WARNING;
+      $requirements['ip_geoloc_lbs']['description'] = $t('Smart IP is configured as a backup in case the Google Maps reverse-geocode fails. However the Smart IP module is not enabled.');
     }
   }
   elseif (module_exists('geoip')) {
@@ -30,16 +30,33 @@ function ip_geoloc_requirements($phase) {
   }
   $geolocation_methods = array_merge($geolocation_methods, module_implements('get_ip_geolocation_alter'));
 
-  $requirements['ip_geoloc']['title'] = $t('IP Geolocation data collection methods employed');
-  $requirements['ip_geoloc']['value'] = implode(', ', $geolocation_methods);
+  $requirements['ip_geoloc_lbs']['title'] = $t('IP Geolocation Views & Maps data collection methods employed');
+  $requirements['ip_geoloc_lbs']['value'] = implode(', ', $geolocation_methods);
   if (empty($geolocation_methods)) {
-    $warning = $t('You currently have no data collection methods enabled. Therefore no new address information can be added to the IP Geolocation database.');
+    $warning = $t('You currently have no data collection methods enabled. Therefore no new address information can be added to the IP geolocation database.');
     if (empty($requirements['ip_geoloc']['description'])) {
-      $requirements['ip_geoloc']['severity'] = REQUIREMENT_WARNING;
-      $requirements['ip_geoloc']['description'] = $warning;
+      $requirements['ip_geoloc_lbs']['severity'] = REQUIREMENT_WARNING;
+      $requirements['ip_geoloc_lbs']['description'] = $warning;
     }
     else {
-      $requirements['ip_geoloc']['description'] .= ' ' . $warning;
+      $requirements['ip_geoloc_lbs']['description'] .= ' ' . $warning;
+    }
+  }
+  if ($phase != 'install') {
+    $css_file = FALSE;
+    $requirements['ip_geoloc_font_awesome']['title'] = t('IP Geolocation Views & Maps <em>Font Awesome</em> extension');
+    if ($css_path = ip_geoloc_get_ccs_library_path('font-awesome')) {
+      $css_file = "$css_path/font-awesome.min.css";
+    }
+    if (file_exists($css_file)) {
+      $requirements['ip_geoloc_font_awesome']['value'] = $t('Installed');
+      $requirements['ip_geoloc_font_awesome']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      $requirements['ip_geoloc_font_awesome']['value'] = $css_path
+        ? $t('%dir found, but required .css file not present: %file', array('%dir' => $css_path, '%file' => $css_file))
+        : $t('The optional <em>Font Awesome</em> directory not found, so you will not be able to superimpose any Font Awesome symbols on top of your markers');
+      $requirements['ip_geoloc_font_awesome']['severity'] = REQUIREMENT_WARNING;
     }
   }
   return $requirements;
@@ -80,8 +97,10 @@ function ip_geoloc_uninstall() {
  * GeoIP City provides:
  *  TBA
  *
- * Goolge provides:
+ * Googlee provides:
  *  TBA
+ *
+ * Note: some of the varchar should be varbinary, see drupal.org/node/1793674
  */
 function ip_geoloc_schema() {
   $schema['ip_geoloc'] = array(

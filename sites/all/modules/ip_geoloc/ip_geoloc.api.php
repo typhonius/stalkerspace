@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Hooks provided by "IP Geolocation Views and Maps" (ip_geoloc).
+ * Hooks provided by "IP Geolocation Views & Maps" (ip_geoloc).
  */
 
 /**

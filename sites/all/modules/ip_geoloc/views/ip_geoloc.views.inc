@@ -295,8 +295,8 @@ function ip_geoloc_views_plugins() {
   $plugins = array(
     'style' => array(
       'ip_geoloc_map' => array(
-        'title' => t('Map (Google, via IP Geolocation)'),
-        'help' => t('Displays the view as a map, showing location markers with balloon texts.'),
+        'title' => t('Map (Google API, via IPGV&M)'),
+        'help' => t('Displays the view as a Google map.'),
         'help topic' => 'style-ip-geoloc-map',
         'handler' => 'ip_geoloc_plugin_style_map',
         'path' => $path . '/views',
@@ -307,14 +307,14 @@ function ip_geoloc_views_plugins() {
         'uses grouping' => FALSE,
         'uses row plugin' => FALSE,
         'type' => 'normal',
-        'even empty' => TRUE, // render output, even if empty
+        'even empty' => TRUE, // may be overridden in ip_geoloc_plugin_style_map::render()
       )
     )
   );
   if (module_exists('leaflet')) {
     $plugins['style']['ip_geoloc_leaflet'] = array(
-      'title' => t('Map (Leaflet, via IP Geolocation)'),
-      'help' => t('Displays the view as a Leaflet map.'),
+      'title' => t('Map (Leaflet API, via IPGV&M)'),
+      'help' => t('Displays the view as a map via the Leaflet API.'),
       'handler' => 'ip_geoloc_plugin_style_leaflet',
       'path' => $path . '/views',
       'theme' => 'ip_geoloc_leaflet', // ip-geoloc-leaflet.tpl.php
@@ -324,13 +324,13 @@ function ip_geoloc_views_plugins() {
       'uses grouping' => FALSE,
       'uses row plugin' => FALSE,
       'type' => 'normal',
-      'even empty' => TRUE, // render output, even if empty
+      'even empty' => TRUE, // may be overridden in ip_geoloc_plugin_style_leaflet::render()
     );
   }
   if (module_exists('openlayers')) {
     $plugins['style']['ip_geoloc_openlayers'] = array(
-      'title' => t('Map (OpenLayers, via IP Geolocation)'),
-      'help' => t('Displays the view as an OpenLayers map.'),
+      'title' => t('Map (OpenLayers API, via IPGV&M)'),
+      'help' => t('Displays the view as a map via the OpenLayers API.'),
       'handler' => 'ip_geoloc_plugin_style_openlayers',
       'path' => $path . '/views',
       'theme' => 'ip_geoloc_openlayers', // ip-geoloc-openlayers.tpl.php
@@ -340,13 +340,13 @@ function ip_geoloc_views_plugins() {
       'uses grouping' => FALSE,
       'uses row plugin' => FALSE,
       'type' => 'normal',
-      'even empty' => TRUE, // render output, even if empty
+      'even empty' => TRUE,  // may be overridden in ip_geoloc_plugin_style_openlayers::render()
     );
   }
 
   $plugins['argument default'] = array(
     'postal_code' => array(
-      'title' => t('Visitor location attribute (via IP Geolocation)'),
+      'title' => t('Visitor location attribute (via IPGV&M)'),
       'handler' => 'ip_geoloc_plugin_argument_default_ip_geoloc',
       'path' => $path . '/views'
     )

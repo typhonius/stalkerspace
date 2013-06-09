@@ -11,6 +11,7 @@
       var markerDirname = settings.ip_geoloc_multi_location_marker_directory;
       var markerWidth   = settings.ip_geoloc_multi_location_marker_width;
       var markerHeight  = settings.ip_geoloc_multi_location_marker_height;
+      var markerAnchor  = settings.ip_geoloc_multi_location_marker_anchor;
       var markerColor   = settings.ip_geoloc_multi_location_marker_default_color;
       var imageExt      = '.png';
 
@@ -60,7 +61,7 @@
         markerDirname + '/' + markerColor + imageExt,
         new google.maps.Size(markerWidth, markerHeight),
         new google.maps.Point(0, 0), // origin
-        new google.maps.Point((markerWidth / 2), markerHeight)); // anchor
+        new google.maps.Point((markerWidth / 2), markerAnchor)); // anchor
       var shadowImage = null;
 
       var i = 1;
@@ -80,7 +81,7 @@
             markerDirname + '/' + locations[key].marker_color + imageExt,
             new google.maps.Size(markerWidth, markerHeight),
             new google.maps.Point(0, 0), // origin
-            new google.maps.Point((markerWidth / 2), markerHeight)); // anchor
+            new google.maps.Point((markerWidth / 2), markerAnchor)); // anchor
         }
         marker = new google.maps.Marker({ map: map, icon: pinImage, shadow: shadowImage, position: position, title: mouseOverText });
 
@@ -133,7 +134,7 @@
 
       // Fall back on IP address lookup, for instance when user declined to share location (error 1)
       function handlePositionError(error) {
-        //alert(Drupal.t('IP Geolocation, multi-location map: getCurrentPosition() returned error !code', {'!code': error.code}));
+        //alert(Drupal.t('IPGV&M multi-location map: getCurrentPosition() returned error !code', {'!code': error.code}));
         var latLng = settings.ip_geoloc_multi_location_center_latlng;
         if (latLng) {
           handleMapCenterAndVisitorMarker2(latLng[0], latLng[1]);
