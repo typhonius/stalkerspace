@@ -1,0 +1,105 @@
+
+.vud-widget-stalkerspace {
+  float: left;
+  clear: left;
+  padding: 2px;
+  margin: 2px 5px 0 0;
+  border: 1px solid #ccc;
+  width: 15px;
+  height: 32px;
+}
+
+.vud-widget-stalkerspace .up-active,
+.vud-widget-stalkerspace .up-inactive,
+.vud-widget-stalkerspace .down-active,
+.vud-widget-stalkerspace .down-inactive {
+  display: block;
+  text-decoration: none;
+  width: 15px;
+  height: 16px;
+  background-image: url('arrows.png');
+}
+
+.vud-widget-stalkerspace a.up-inactive,
+.vud-widget-stalkerspace a.down-inactive,
+.vud-widget-stalkerspace span.up-inactive,
+.vud-widget-stalkerspace span.down-inactive,
+.vud-widget-stalkerspace a.up-active,
+.vud-widget-stalkerspace a.down-active,
+.vud-widget-stalkerspace span.up-active,
+.vud-widget-stalkerspace span.down-active {
+  cursor: pointer;
+}
+
+.vud-widget-stalkerspace .up-active,
+.vud-widget-stalkerspace .up-inactive:hover {
+  background-position: -10px -10px;
+  float: left;
+}
+
+.vud-widget-stalkerspace .up-inactive,
+.vud-link-reset .up-active:hover {
+  background-position: -10px -82px;
+  float: left;
+}
+
+.vud-widget-stalkerspace .down-active,
+.vud-widget-stalkerspace .down-inactive:hover {
+  background-position: -10px -118px;
+  float: right;
+}
+
+.vud-widget-stalkerspace .down-inactive,
+.vud-link-reset .down-active:hover {
+  background-position: -10px -46px;
+  float: right;
+}
+
+.total-votes-plain {
+  font-weight: bold;
+  color: #494949;
+}
+
+.vud-term-table {
+  border: 1px solid #D3E7F4;
+  float: right;
+  width: 40em;
+  margin: 0.5em 0 0.5em 1em;
+}
+
+.vud-widget-stalkerspace .ctools-ajaxing {
+  padding-right: 0 !important;
+  display: block;
+  width: 15px;
+  height: 16px;
+  background-position: center;
+  float: left;
+}
+
+.vud-widget-stalkerspace .ctools-ajaxing.plain-click-up {
+  margin-right: 3px;
+}
+
+.vud-widget-stalkerspace .ctools-ajaxing.plain-click-down {
+  margin-left: 3px;
+}
+
+.vud-widget-stalkerspace .ctools-ajaxing span {
+  display: none;
+}
+
+/**
+ * Hide elements visually, but keep them available for screen-readers.
+ *
+ * Used for information required for screen-reader users to understand and use
+ * the site where visual display is undesirable. Information provided in this
+ * manner should be kept concise, to avoid unnecessary burden on the user. Must
+ * not be used for focusable elements (such as links and form elements) as this
+ * causes issues for keyboard only or voice recognition users. "!important" is
+ * used to prevent unintentional overrides.
+ */
+.element-invisible {
+  position: absolute !important;
+  clip: rect(1px 1px 1px 1px); /* IE6, IE7 */
+  clip: rect(1px, 1px, 1px, 1px);
+}

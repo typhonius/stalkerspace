@@ -47,7 +47,7 @@ function stalkerspace_all_content() {
 /**
  * Implements hook_node_view
  */
-function stalkerspace_node_view($node, $node_view) {
+function stalkerspace_node_view($node, $view_mode) {
   $links = array();
 
   if ($node->comment != COMMENT_NODE_HIDDEN) {
@@ -185,4 +185,14 @@ function stalkerspace_block_view($delta = '') {
   }
 
   return $block;
+}
+
+/**
+ * Implementation of hook_ctools_plugin_dierctory() to let the system
+ * know we implement widget plugins.
+ */
+function stalkerspace_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'vud') {
+    return $plugin;
+  }
 }
