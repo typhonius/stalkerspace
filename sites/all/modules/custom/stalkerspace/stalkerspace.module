@@ -33,6 +33,7 @@ function stalkerspace_menu() {
 
 function stalkerspace_all_content() {
   // TODO we need to cache_set and cache_get here I think
+  // Issue already exists to look into this.
   $nodequery = new StalkerspaceEntityFieldQuery();
 
   $result = $nodequery->fieldOrderBy('field_activity', 'radioactivity_energy', 'DESC')
