@@ -3,3 +3,5 @@ description = A collection of tweaks and additional functionality for stalkerspa
 core = 7.x
 dependencies[] = ip_geoloc
 files[] = stalkerspace.inc
+package = Stalkerspace
+configure = admin/config/system/stalkerspace
