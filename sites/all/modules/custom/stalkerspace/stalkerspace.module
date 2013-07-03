@@ -75,6 +75,7 @@ function stalkerspace_node_view($node, $view_mode) {
       );
     }
   }
+
 }
 
 /**
@@ -170,7 +171,7 @@ function stalkerspace_block_info() {
  */
 function stalkerspace_block_view($delta = '') {
   $block = array();
-  $context = og_context();
+//  $context = og_context();
 // Alter access to be only those users in the group (and admin?)
 // Otherwise perhaps offer the ability to join the group
 
@@ -180,7 +181,7 @@ function stalkerspace_block_view($delta = '') {
   switch ($delta) {
     case 'stalkerspace_create_content':
       $block['subject'] = '';
-      $block['content'] = l(t('Confess'), 'node/add/confession', array('html' => FALSE, 'query' => array('space' => $context['gid'])));
+      $block['content'] = l(variable_get('stalkerspace_confession_title', t('Confess')), 'node/add/confession', array('html' => FALSE, 'query' => array('space' => $context['gid'])));
     break;
   }
 
