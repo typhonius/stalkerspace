@@ -136,6 +136,9 @@ function stalkerspace_form_confession_node_form_alter(&$form, &$form_state, $for
     $form['og_group_ref']['und'][0]['default']['#default_value'] = $context['gid'];
     $form['og_group_ref']['#access'] = FALSE;
     $form['stalkerspace']['#access'] = FALSE;
+    $group = entity_load_single('node', $context['gid']);
+    $label = entity_label('node', $group);
+    drupal_set_title($label);
   }
   else {
     drupal_set_title(t('Confess'), PASS_THROUGH);

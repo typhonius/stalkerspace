@@ -2,6 +2,7 @@ name = Stalkerspace
 description = A collection of tweaks and additional functionality for stalkerspace.
 core = 7.x
 dependencies[] = ip_geoloc
+dependencies[] = og_context
 files[] = stalkerspace.inc
 package = Stalkerspace
 configure = admin/config/system/stalkerspace
