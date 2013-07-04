@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * Install file for hide_author
+ */
+
+/**
+ * Implements hook_node_install
+ */
+function hide_author_install() {
+  if (!in_array('confession', node_type_get_names())) {
+    $t = get_t();
+
+    $type = array(
+      'type' => 'confession',
+      'name' => $t('Confession'),
+      'description' => $t('description'),
+      'base' => 'node_content',
+      'custom' => TRUE,
+      'title_label' => $t('Confession Title'),
+      'help' => '',
+    );
+
+  	$content_type = node_type_set_defaults($type);
+
+  	node_add_body_field($content_type, $t('Article Body'));
+  	node_type_save($content_type);
+	}
+
+  if (!field_info_field('field_anonymous_post')) {
+  	$field = array (
+	    'name' => 'field_anonymous_post',
+	    'field_name' => 'field_anonymous_post',
+	    'type' => 'list_boolean',
+	    'module' => 'list',
+	    'settings' => array(
+	      'allowed_values' => array(
+	        0 => '',
+	        1 => '',
+	      ),
+	    ),
+
+	    'active' => '1',
+	    'locked' => '0',
+	    'cardinality' => '1',
+	    'deleted' => '0',
+	  );
+
+	  $instance = array (
+	  	'label' => 'Post Anonymously',
+	  	'widget' => array (
+	    	'type' => 'options_onoff',
+	    	'module' => 'options',
+	    	'active' => 1,
+	    	'settings' => array (
+	      	'display_label' => 1,
+	    	),
+	  	),
+
+	  	'display' => array (
+	    	'default' => array (
+	      	'label' => 'hidden',
+	      	'type' => 'hidden',
+	   		),
+	  	),
+	    'required' => 0,
+	    'description' => '',
+	    'default_value' => array (
+	    	0 => array (
+	      	'value' => 1,
+	    	),
+	  	),
+	  	'field_name' => 'field_anonymous_post',
+	  	'entity_type' => 'node',
+	  	'bundle' => 'confession',
+	  	'deleted' => '0',
+		);
+
+    field_create_field($field);
+    field_create_instance($instance);
+  }
+}
+
+/**
+ * Implements hook_schema
+ */
+function hide_author_schema() {
+  $schema['hide_author'] = array(
+    'description' => 'An indexation table mapping nids to uids when users opt to be anonymous.',
+    'fields' => array(
+      'entity' => array(
+        'description' => 'The entity type.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'eid' => array(
+        'description' => 'The entity id for an entity.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'The {users}.uid that owns this entity; initially, this is the user that created it.',
+        'type' => 'int',
+      ),
+    ),
+    'unique_keys' => array(
+      'eid' => array('eid'),
+    ),
+    'primary_key' => array(
+      'eid' => array('eid'),
+    ),
+    /*'foreign keys' => array(
+      'node_author' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+      'node_node' => array(
+      	'table' => 'node',
+      	'columns' => array('nid' => 'nid'),
+      ),
+    ),*/
+  );
+
+  return $schema;
+}

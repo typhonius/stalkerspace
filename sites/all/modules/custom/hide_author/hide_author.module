@@ -1,0 +1,134 @@
+<?php
+/**
+ * @file
+ * Code for the Hide Author module.
+ */
+
+// TODO Create an admin page for users to peruse who actually posted stuff.
+// also add the option to allow deletes from the table on node_delete?
+/**
+ * Implements hook_menu
+ */
+function hide_author_menu() {
+  $items = array();
+  $items['admin/config/content/hide_author'] = array(
+    'title' => 'Hide Author',
+    'description' => 'Access administrative pages for hide author module.',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hide_author_admin_settings_page'),
+    'file' => 'hide_author.admin.inc',
+    'access arguments' => array('administer hide author'),
+  );
+  $items['admin/config/content/hide_author/settings'] = array(
+    'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/content/hide_author/comments'] = array(
+    'title' => 'Hidden Comments',
+    'description' => 'Access hidden comments.',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hide_author_admin_comments_page'),
+    'file' => 'hide_author.admin.inc',
+    'access arguments' => array('administer hide author'),
+  );
+  $items['admin/config/content/hide_author/nodes'] = array(
+    'title' => 'Hidden Nodes',
+    'description' => 'Access hidden nodes',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hide_author_admin_nodes_page'),
+    'file' => 'hide_author.admin.inc',
+    'access arguments' => array('administer hide author'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permissions
+ */
+function hide_author_permission() {
+  return array(
+    'administer hide author' => array(
+      'title' => t('Hide Author'),
+      'description' => t('Allows administrative access to the hide author page'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_entity_insert
+ * @param object $entity
+ * @param object $type
+ */
+function hide_author_entity_insert($entity, $type) {
+  if (isset($entity->field_anonymous_post) && $entity->field_anonymous_post['und'][0]['value']) {
+    switch ($type) {
+      case 'node':
+        if ($entity->type == 'confession' && $entity->is_new) {
+          hide_author_insert($entity, $type, $entity->nid);
+        }
+      break;
+      case 'comment':
+        if ($entity->node_type == 'comment_node_confession') {
+          hide_author_insert($entity, $type, $entity->cid);
+        }
+      break;
+    }  
+  }
+}
+
+function hide_author_insert($entity, $type, $eid) {
+//hide_author_enable hide_author_admin_save
+  $options = drupal_map_assoc(array('node', 'comment'));
+  $enabled = variable_get('hide_author_enable', $options);
+  $save = variable_get('hide_author_admin_save', $options);
+
+  if ($enabled[$type]) {
+    if ($save[$type]) {
+      $record = array('entity' => $type, 'eid' => $eid, 'uid' => $entity->uid);
+      drupal_write_record('hide_author', $record);
+    }
+    $entity->uid = 0;
+    $entity->name = isset($entity->name) ? variable_get('anonymous', t('Anonymous')) : '';
+    $primary_key = ($type == 'node') ? 'nid' : 'cid';
+    drupal_write_record($type, $entity, $primary_key);
+  }
+}
+
+/**
+ * Implements hook_node_delete
+ * @param object $node
+ */
+function hide_author_entity_delete($entity, $type) {
+  if ($type == 'node' || $type == 'comment') {
+  $primary_key = ($type == 'node') ? 'nid' : 'cid';  
+    db_delete('hide_author')
+      ->condition('eid', $entity->$primary_key)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_form_alter
+ */
+function hide_author_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'confession_node_form' || $form_id == 'comment_node_confession_form') {
+    $enabled = variable_get('hide_author_enable', $options);
+    switch ($form_id) {
+      case 'confession_node_form':
+        if (!$enabled['node']) {
+          unset($form['field_anonymous_post']);
+        }
+        break;
+      case 'comment_node_confession_form':
+        if (!$enabled['comment']) {
+          unset($form['field_anonymous_post']);
+        }
+        break;
+    }
+  }
+}

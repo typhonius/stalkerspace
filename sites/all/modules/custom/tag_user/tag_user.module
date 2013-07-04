@@ -1,0 +1,171 @@
+<?php
+/**
+ * @file
+ *
+ * tag_user module file
+ */
+
+/**
+ * Implements hook_menu().
+ *
+ * @return mixed
+ */
+function tag_user_menu() {
+  $items = array();
+  $items['tag_user/autocomplete'] = array(
+    'title' => 'Tag User autocomplete',
+    'page callback' => 'tag_user_autocomplete',
+    'access callback' => 'user_access',
+    'access arguments' => array('access user profiles'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/config/content/tag_user'] = array(
+    'title' => 'Tag User',
+    'description' => 'Access administrative pages for tag user.',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tag_user_admin_settings_page'),
+    'access arguments' => array('administer filters'),
+  );
+
+  return $items;
+}
+
+function tag_user_admin_settings_page() {
+  $form = array();
+  $form['tag_user_tag_symbols'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Tag Symbols'),
+    '#description' => t('Enter a comma separated list of symbols that may be used by users to tag other users in content'),
+    '#default_value' => variable_get('tag_user_tag_symbols', '@,+'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Menu callback from tag_user_menu().
+ *
+ * @param $string
+ */
+function tag_user_autocomplete($string) {
+  $matches = array();
+  if ($string) {
+    $result = db_select('users')->fields('users', array('picture', 'name'))->condition('name', db_like($string) . '%', 'LIKE')->range(0, 10)->execute();
+    foreach ($result as $user) {
+      // TODO dep on image to make this faster?
+      if ($user->picture && module_exists('image')) {
+        $picture = db_select('file_managed')->fields('file_managed', array('uri'))->condition('fid', ($user->picture), '=')->execute()->fetchField();
+      }
+      else {
+        $picture = variable_get('user_picture_default', '');
+      }
+      if (file_valid_uri($picture)) {
+        $themed_picture = theme('image_style', array('style_name' => 'tag_user_autocomplete_icon', 'path' => $picture));
+      }
+      else {
+        // TODO need css or something here to change size
+        $themed_picture = theme('image', array('path' => $picture));
+      }
+      $matches[$user->name] = $themed_picture . check_plain($user->name);
+    }
+  }
+  drupal_json_output($matches);
+}
+
+/**
+ * Implements hook_user_tagable_widgets().
+ *
+ * @return array
+ */
+function tag_user_user_tagable_widgets() {
+  return array(
+    'text_textfield',
+    'text_textarea',
+    'text_textarea_with_summary',
+  );
+}
+
+/**
+ * Implements hook_field_widget_info_alter().
+ *
+ * @param $info
+ */
+function tag_user_field_widget_info_alter(&$info) {
+  foreach (module_invoke_all('user_tagable_widgets') as $widget) {
+    $info[$widget]['label'] .= " (with user tagging)";
+  }
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ *
+ * @param $element
+ * @param $form_state
+ * @param $context
+ */
+function tag_user_field_widget_form_alter(&$element, &$form_state, $context) {
+//function tag_user_field_widget_properties_alter(&$widget, $context) {
+  $widgets = module_invoke_all('user_tagable_widgets');
+  if (in_array($context['instance']['widget']['type'], $widgets)) {
+    // Add the autocomplete library to steal its functions
+    // We're currently using a lot of what it does but altered, we may not
+    // be able to use this unless there are functions we haven't broken
+    drupal_add_library('system', 'drupal.autocomplete');
+    $element['#attached']['js'] = array(
+      drupal_get_path('module', 'tag_user') . '/tag_user.js',
+      // Eventually alter the Drupal.settings... in js for an object instantiated in the js
+      array(
+        'type' => 'setting',
+        'data' => array('tag_user_tag_symbols' => variable_get('tag_user_tag_symbols', '@,+')),
+      ),
+    );
+    $element['#tag_user_enabled'] = TRUE;
+    $element['#attributes']['id'][] = 'tag-user';
+    $element['#attributes']['class'][] = 'form-autocomplete';
+
+    $element['#post_render'] = array('tag_user_append_autocomplete');
+  }
+}
+
+
+function tag_user_append_autocomplete($content, $element) {
+  if ($element['#type'] != 'text_format') {
+    global $base_url;
+    $attributes = array();
+    $attributes['type'] = 'hidden';
+    $attributes['id'] = 'tag-user-autocomplete';
+    // TODO be careful here with subdomains and url()
+    $attributes['value'] = url($base_url . '/tag_user/autocomplete', array('absolute' => TRUE));
+    $attributes['disabled'] = 'disabled';
+    $attributes['class'][] = 'tag-user';
+    $content .= '<input' . drupal_attributes($attributes) . ' />';
+  }
+  return ($content);
+}
+
+/**
+ * Implement hook_image_default_styles().
+ * @return array
+ */
+function tag_user_image_default_styles() {
+  $styles = array();
+
+  $styles['tag_user_autocomplete_icon'] = array(
+    'label' => 'Tag User icon',
+    'effects' => array(
+      array(
+        'name' => 'image_scale',
+        'data' => array(
+          'width' => 25,
+          'height' => 25,
+          'upscale' => 1,
+        ),
+        'weight' => 0,
+      ),
+    ),
+  );
+
+  return $styles;
+}
+

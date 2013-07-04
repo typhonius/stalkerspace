@@ -1,0 +1,3 @@
+name = Hide Author
+description = Allows node authors to optionally remove their uid from the node prior to saving. This ensures anonymity whilst preserving the uid for administrative users.
+core = 7.x
